@@ -12,3 +12,10 @@
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
+
+        mov eax, 4              ; familiar pair of operations
+        add eax, 4
+
+        mov ebx, eax            ; return the result as an error code
+        mov eax, 1
+        int 80h
