@@ -6,7 +6,7 @@ if [ "$1" == "" ]; then
 fi
 
 INFILE=$1
-NO_EXTENSION="${INFILE##*.}"
+NO_EXTENSION="${INFILE%.*}"
 OBJFILE="${NO_EXTENSION}.o"
 EXEFILE="${NO_EXTENSION}"
 
