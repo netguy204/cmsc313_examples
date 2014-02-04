@@ -15,12 +15,13 @@ HelloLen:       equ $-HelloMsg
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
-        mov eax, 4
-        mov ebx, 1
-        mov ecx, HelloMsg
-        mov edx, HelloLen
-        int 80H
 
-        mov eax, 1
-        mov ebx, 0
-        int 80H
+        mov eax, 4              ; sys_write system call
+        mov ebx, 1              ; stdout is the target
+        mov ecx, HelloMsg       ; adddress of the start of the message
+        mov edx, HelloLen       ; length of the message
+        int 80H                 ; kernel interrupt
+
+        mov eax, 1              ; sys_exit
+        mov ebx, 0              ; status code to return
+        int 80H                 ; kernel interrupt
