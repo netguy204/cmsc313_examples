@@ -14,4 +14,4 @@ EXEFILE="${NO_EXTENSION}"
 
 # force 32 bit code generation
 nasm -f elf -g -F stabs $INFILE
-ld -o $EXEFILE $OBJFILE -melf_i386 $*
+gcc -o $EXEFILE $OBJFILE -m32 -L/usr/lib -lc $*
