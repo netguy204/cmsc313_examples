@@ -12,3 +12,8 @@
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
+
+	;; call sys_exit to finish things off
+	mov eax, 1              ; sys_exit syscall
+	mov ebx, 0              ; no error
+	int 80H                 ; kernel interrupt
