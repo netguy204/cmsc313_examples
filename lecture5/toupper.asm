@@ -13,14 +13,11 @@
 msg1:   db "Enter string: "             ; user prompt
 len1:   equ $-msg1                      ; length of first message
 
-msg2:   db "Original: "                 ; original string label
+msg2:   db "Original string: "          ; original string label
 len2:   equ $-msg2                      ; length of second message
 
-msg3:   db "Convert:  "                 ; converted string label
+msg3:   db "Converted string:  "        ; converted string label
 len3:   equ $-msg3
-
-msg4:   db 10, "Read error", 10         ; error message
-len4:   equ $-msg4
 
 [SECTION .bss]
 ;;; Here we declare uninitialized data. We're reserving space (and
