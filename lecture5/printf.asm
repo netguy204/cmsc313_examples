@@ -9,16 +9,16 @@ Msg: db "The number is: %d",10,0
 ;;; will use as it executes. Think of these as "global variables"
 
 [SECTION .text]
-;;; This is where are program lives.
+;;; This is where our program lives.
 global main                    ; make start global so ld can find it
 extern printf
 
 main:                          ; this gets called from code in crt0
 ;; argc and argv are available on our stack if we want them
 
-	push 15
-	push Msg
-	call printf
-	add esp, 8
+        push 15
+        push Msg
+        call printf
+        add esp, 8
 
-	mov eax, 0              ; return code goes in eax
+        mov eax, 0              ; return code goes in eax

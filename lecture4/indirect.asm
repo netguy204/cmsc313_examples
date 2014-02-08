@@ -9,14 +9,14 @@ HelloWorld:     db "Hello, world!", 10
 ;;; will use as it executes. Think of these as "global variables"
 
 [SECTION .text]
-;;; This is where are program lives.
+;;; This is where our program lives.
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
-	mov eax, [HelloWorld]
-	cmp eax, "Hell"
-	je TrueLabel
-	jmp FalseLabel
+        mov eax, [HelloWorld]
+        cmp eax, "Hell"
+        je TrueLabel
+        jmp FalseLabel
 
 TrueLabel:
         mov eax, 1              ; return the value as an error code
@@ -27,4 +27,3 @@ FalseLabel:
         mov eax, 1              ; return the value as an error code
         mov ebx, 0
         int 80h
-

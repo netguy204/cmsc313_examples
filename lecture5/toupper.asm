@@ -32,7 +32,7 @@ newstr: resb BUFLEN                  ; converted string
 readlen: resb 4                      ; storage for the length of string we read
 
 [SECTION .text]
-;;; This is where are program lives.
+
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here

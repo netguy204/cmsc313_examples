@@ -8,7 +8,7 @@
 ;;; will use as it executes. Think of these as "global variables"
 
 [SECTION .text]
-;;; This is where are program lives.
+;;; This is where our program lives.
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
