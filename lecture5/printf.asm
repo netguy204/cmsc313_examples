@@ -16,9 +16,11 @@ extern printf
 main:                          ; this gets called from code in crt0
 ;; argc and argv are available on our stack if we want them
 
+        ;; printf("The number is: %d", 15);
         push 15
         push Msg
         call printf
         add esp, 8
 
         mov eax, 0              ; return code goes in eax
+        ret

@@ -33,9 +33,9 @@ _start:                         ; the program actually starts here
         jmp .loopexit           ; otherwise, loop finished
 
 .loopbody:
-        mov ebx, [esi + eax]    ; ebx = input[i]
+        mov ebx, [esi + 4*eax]    ; ebx = input[i]
         add ebx, 1              ; ebx += 1
-        mov [edi + eax], ebx    ; output[i] = ebx
+        mov [edi + 4*eax], ebx    ; output[i] = ebx
 
         inc eax                 ; ++i
         jmp .looptest
