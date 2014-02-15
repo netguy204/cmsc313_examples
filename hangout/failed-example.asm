@@ -19,7 +19,6 @@ array:  db 1, 2, 3, 4
 global _start                   ; make start global so ld can find it
 
 _start:                         ; the program actually starts here
-
         ;; this has no size specifiers so NASM will complain that it
         ;; doesn't know how much it should move from the source to
         ;; the destination
