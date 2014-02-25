@@ -8,7 +8,7 @@ test: proj3
 	./test.sh
 
 clean:
-	rm -f *.o proj3
+	rm -f *.o proj3 output.txt
 
 %.o: %.asm
 	$(NASM) $<

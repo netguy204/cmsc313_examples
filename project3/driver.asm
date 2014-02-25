@@ -19,11 +19,22 @@ global _start                   ; make start global so ld can find it
 extern prt_hex
 
 prt_newline:
+        push eax
+        push ebx
+        push ecx
+        push edx
+
         mov eax, WRITE
         mov ebx, STDOUT
         mov ecx, newline
         mov edx, 1
         int 80h
+
+        pop edx
+        pop ecx
+        pop ebx
+        pop eax
+
         ret
 
 a_plus_b:
@@ -86,6 +97,16 @@ _start:                         ; the program actually starts here
         mov eax, 18
         mov ebx, 2
         call a_plus_b
+        call prt_newline
+
+        ;; verify that registers are protected
+        mov eax, 41
+        mov ebx, 40
+        call prt_hex
+        call prt_newline
+
+        mov eax, ebx
+        call prt_hex
         call prt_newline
 
         ;; call sys_exit to finish things off
