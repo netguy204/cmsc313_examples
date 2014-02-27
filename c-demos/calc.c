@@ -137,10 +137,10 @@ int read_base(const char* str, int base) {
       value = str[position] - '0';
     } else if(str[position] >= 'A' && str[position] <= 'Z') {
       // convert an alpha digit
-      value = str[position] - 'A';
+      value = 10 + (str[position] - 'A');
     } else if(str[position] >= 'a' && str[position] <= 'z') {
       // handle lower case as well
-      value = str[position] - 'a';
+      value = 10 + (str[position] - 'a');
     }
 
     if(value >= base) {

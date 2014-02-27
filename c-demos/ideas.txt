@@ -1,0 +1,22 @@
+Some ideas that you could add to calc.c in your experimentations:
+
+Easy
+* A modulus operator "%"
+* Negation
+* Integer logarithm
+
+Medium
+* Support for reading negative numbers
+* Duplicate top value on the stack
+* Drop the top value on the stack
+* Swap the top two values on the stack
+
+Hard
+* Fully convert to a floating point stack
+* Add support for sin/cos/tan/tan2
+
+Expert
+* Support both integer and floating point values on the stack simultaneously
+* Support strings on the stack
+* Convert numbers on the stack to/from strings on the stack
+* String manipulation (concatenation, substring, etc)
