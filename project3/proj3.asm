@@ -32,10 +32,10 @@ prt_hex:                        ; this will be called over and over again by the
         int 80h
 
         ;; restore the registers we manipulated
-        pop eax
-        pop ebx
-        pop ecx
         pop edx
+        pop ecx
+        pop ebx
+        pop eax
 
         ;; return
         ret

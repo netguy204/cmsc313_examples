@@ -28,7 +28,7 @@ main:                         ; the program actually starts here
 
         mov eax, 0xafafafaf
 
-        push eax
+        push ax
 
         push esp
         push valueMsg
