@@ -1,6 +1,6 @@
 #!/bin/bash
 
-./proj3 > output.txt
+./proj4 > output.txt
 diff expected.txt output.txt
 
 if [ "$?" == "0" ]; then

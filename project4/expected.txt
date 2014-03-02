@@ -1,8 +1,26 @@
-0x0
-0xFFFF
-0xFFFFFFFF
-0x2A
-0x19 plus 0x32 equals 0x4B
-0x12 plus 0x2 equals 0x14
-0x29
-0x28
+Janet Evanovich
+Stieg Larsson
+Lee Child
+Haruki Murakami
+Todd Burpo
+Debbie Macomber
+Ally Condie
+Sarah Bird
+Claire Cook
+Christopher Paolini
+Victoria Dahl
+Umberto Eco
+Lionel Shriver
+Meg Meeker, M.D.
+Pamela Clare
+=========
+J.K. Rowling
+Andrew Gross
+Lincoln Child
+Anna Katherine Green
+Richard Marsh
+Debbie Macomber
+Joyce Carol Oates
+Kim Carpenter
+=========
+Charlaine Harris

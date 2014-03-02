@@ -19,6 +19,9 @@ book l10 = {"A Summer Affair", "Elin Hilderbrand", "Romance", 2008, &l9};
 book l11 = {"Dead until Dark", "Charlaine Harris", "Fantasy", 2001, &l10};
 book l12 = {"Between the Dark and the Daylight", "Richard Marsh", "Mystery", 2012, &l11};
 
+// this is here to make sure that all of the elements in the link list
+// aren't also continguous in memory. that would make this project too
+// easy...
 long breaking_up_the_memory = 42;
 
 book l13 = {"Good Girls Don't", "Victoria Dahl", "Romance", 2011, &l12};
