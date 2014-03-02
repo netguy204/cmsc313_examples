@@ -46,6 +46,10 @@ printNewline:
 
 ;;; eax should point to the string. on return, eax is the length
 stringLength:
+;;; Students: Feel free to use this code in your submission but you
+;;; must add comments explaining the code to prove that you
+;;; know how it works.
+
         push esi
         mov esi, eax
         mov eax, 0
@@ -62,7 +66,8 @@ stringLength:
         pop esi
         ret
 
-authorsForDate:          ; the program actually starts here
+;;; this label will be called as a subroutine by the code in driver.asm
+authorsForDate:
         ;; protect the registers we use
         push eax
         push ebx
