@@ -1,0 +1,24 @@
+Project 4: Dealing with Structures
+
+Work in Progress...
+
+
+Feel free to edit proj4.asm in place to create your program.
+
+Test your code by typing:
+
+$ make test
+
+The output of make test will simply be "Program output matches
+expected" when your program passes all of the public tests.
+
+If your program fails the public tests then make test shows the lines
+that were expected (prefixed by <) and the lines that were seen
+(prefixed by >) along with the test "Program output does not match
+expected"
+
+The only thing you need to submit for project 4 is your proj4.asm
+file. Notice that no typescript file is required. You can submit it
+using:
+
+submit cmsc313_btaylor proj4.asm
