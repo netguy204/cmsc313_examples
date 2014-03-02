@@ -73,8 +73,8 @@ int stack_peek(IntStack* stack) {
 
 
 /*
- * Print a value in any base (binary, decimal, hexadecimal). Hm. Could
- * this be helpful for project 3?
+ * Convert a value to a string in any base (binary, decimal,
+ * hexadecimal). Hm. Could this be helpful for project 3?
  */
 
 // static buffer that base_str fills with data and then returns. What
@@ -154,9 +154,10 @@ int read_base(const char* str, int base) {
 }
 
 int main(int argc, char *argv[]) {
-  // we need a base and at least one operation to do anything useful
-  if(argc < 2) fail_exit("usage: %s base operation_1 [operations_2 .. operation_n]", argv[0]);
+  // we need at least 1 argument to do anything useful
+  if(argc < 2) fail_exit("usage: %s operation_1 [operations_2 .. operation_n]", argv[0]);
 
+  // default base is 10 (decimal)
   int base = 10;
 
   IntStack stack;
