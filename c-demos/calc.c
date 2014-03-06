@@ -1,22 +1,8 @@
+#include "utils.h"
+
 #include <stdio.h>
-#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-
-/*
- * Print an error message on stderr and then terminate the program
- * returning an error code.
- */
-void fail_exit(const char * message, ...) {
-  va_list args;
-  va_start(args, message);
-  vfprintf(stderr, message, args);
-  va_end(args);
-
-  fprintf(stderr, "\n");
-  fflush(stderr);
-  exit(1);
-}
 
 
 /*
@@ -31,7 +17,7 @@ typedef struct {
 void stack_init(IntStack* stack) {
   // our default stack size is large enough for 16 elements
   stack->max = 16;
-  stack->values = (int*)malloc(sizeof(int) * stack->max);
+  stack->values = (int*) malloc(sizeof(IntStack) * stack->max);
   stack->top = 0;
 }
 
@@ -153,68 +139,79 @@ int read_base(const char* str, int base) {
   return total;
 }
 
+// default base is 10 (decimal)
+int base = 10;
+
+void evaluate(IntStack* stack, char* word) {
+  // dispatch each possible operation
+  if(strcmp(word, "set-base") == 0) {
+    // set the current base to the value at the top of the stack
+    base = stack_pop(stack);
+    if(base < 1) fail_exit("invalid base '%d'. Base must be greater than 0", base);
+  } else if(strcmp(word, "+") == 0) {
+    // addition
+    int b = stack_pop(stack);
+    int a = stack_pop(stack);
+    int result = a + b;
+    stack_push(stack, result);
+  } else if(strcmp(word, "%") == 0) {
+    int a = stack_pop(stack);
+    int b = stack_pop(stack);
+    int result = b % a;
+    stack_push(stack, result);
+  } else if(strcmp(word, "-") == 0) {
+    // subtraction
+    int b = stack_pop(stack);
+    int a = stack_pop(stack);
+    int result = a - b;
+    stack_push(stack, result);
+  } else if(strcmp(word, "/") == 0) {
+    // division
+    int b = stack_pop(stack);
+    int a = stack_pop(stack);
+    int result = a / b;
+    stack_push(stack, result);
+  } else if(strcmp(word, "*") == 0) {
+    // multiplication
+    int b = stack_pop(stack);
+    int a = stack_pop(stack);
+    int result = a * b;
+    stack_push(stack, result);
+  } else if(strcmp(word, "^") == 0) {
+    // exponentiation
+    int b = stack_pop(stack);
+    int a = stack_pop(stack);
+    int result = 0;
+    for(int jj = 0; jj < b; ++jj) {
+      if(result == 0) {
+        result = a;
+      } else {
+        result *= a;
+      }
+    }
+    stack_push(stack, result);
+  } else if(strcmp(word, "print") == 0) {
+    // pop and print the value on the top of the stack
+    int value = stack_pop(stack);
+    printf(">> %s\n", base_str(value, base));
+  } else {
+    // assume we have a number in BASE
+    int value = read_base(word, base);
+    stack_push(stack, value);
+  }
+}
+
 int main(int argc, char *argv[]) {
-  // we need at least 1 argument to do anything useful
-  if(argc < 2) fail_exit("usage: %s operation_1 [operations_2 .. operation_n]", argv[0]);
-
-  // default base is 10 (decimal)
-  int base = 10;
-
+  char word[64];
   IntStack stack;
+
+  // we need at least 1 argument to do anything useful
+  if(argc > 1) fail_exit("usage: %s (no arguments, all input via stdin)", argv[0]);
+
   stack_init(&stack);
 
-  for(int ii = 1; ii < argc; ++ii) {
-    // dispatch each possible operation
-    if(strcmp(argv[ii], "set-base") == 0) {
-      // set the current base to the value at the top of the stack
-      base = stack_pop(&stack);
-      if(base < 1) fail_exit("invalid base '%d'. Base must be greater than 0", base);
-    } else if(strcmp(argv[ii], "+") == 0) {
-      // addition
-      int b = stack_pop(&stack);
-      int a = stack_pop(&stack);
-      int result = a + b;
-      stack_push(&stack, result);
-    } else if(strcmp(argv[ii], "-") == 0) {
-      // subtraction
-      int b = stack_pop(&stack);
-      int a = stack_pop(&stack);
-      int result = a - b;
-      stack_push(&stack, result);
-    } else if(strcmp(argv[ii], "/") == 0) {
-      // division
-      int b = stack_pop(&stack);
-      int a = stack_pop(&stack);
-      int result = a / b;
-      stack_push(&stack, result);
-    } else if(strcmp(argv[ii], "*") == 0) {
-      // multiplication
-      int b = stack_pop(&stack);
-      int a = stack_pop(&stack);
-      int result = a * b;
-      stack_push(&stack, result);
-    } else if(strcmp(argv[ii], "^") == 0) {
-      // exponentiation
-      int b = stack_pop(&stack);
-      int a = stack_pop(&stack);
-      int result = 0;
-      for(int jj = 0; jj < b; ++jj) {
-        if(result == 0) {
-          result = a;
-        } else {
-          result *= a;
-        }
-      }
-      stack_push(&stack, result);
-    } else if(strcmp(argv[ii], "print") == 0) {
-      // pop and print the value on the top of the stack
-      int value = stack_pop(&stack);
-      printf("%s\n", base_str(value, base));
-    } else {
-      // assume we have a number in BASE
-      int value = read_base(argv[ii], base);
-      stack_push(&stack, value);
-    }
+  while(fscanf(stdin, "%s", word) > 0) {
+    evaluate(&stack, word);
   }
 
   return 0;
