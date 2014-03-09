@@ -1,4 +1,4 @@
-;;; Context: This is implements the final stage of a merge-sort.
+;;; Context: This implements the final stage of a merge-sort.
 ;;; inputA and inputB are in order internally and this program
 ;;; combines them into a final sorted list.
 ;;;
