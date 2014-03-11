@@ -2,6 +2,11 @@
 #include <string.h>
 #include <stdint.h>
 
+char str[] = "Hello, World";
+uint32_t nums32[] = {1, 2, 3, 4};
+uint16_t nums16[] = {1, 2, 3, 4};
+uint8_t nums8[]  = {1, 2, 3, 4};
+
 void print_hex(uint8_t* data, size_t count) {
   size_t row_count = 8;
 
@@ -16,13 +21,18 @@ void print_hex(uint8_t* data, size_t count) {
 }
 
 int main(int argc, char *argv[]) {
-  printf("argv:\n");
-  print_hex((uint8_t*)argv, 30);
 
-  for(int cc = 0; cc < argc; ++cc) {
-    printf("argv[%d]:\n", cc);
-    print_hex((uint8_t*)argv[cc], strlen(argv[cc]) + 1);
-  }
+  printf("str:\n");
+  print_hex((uint8_t*)str, sizeof(str));
+
+  printf("nums32:\n");
+  print_hex((uint8_t*)nums32, sizeof(nums32));
+
+  printf("nums16:\n");
+  print_hex((uint8_t*)nums16, sizeof(nums16));
+
+  printf("nums8:\n");
+  print_hex((uint8_t*)nums8, sizeof(nums8));
 
   return 0;
 }
