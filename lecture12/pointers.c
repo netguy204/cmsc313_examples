@@ -7,6 +7,15 @@ uint32_t nums32[] = {1, 2, 3, 4};
 uint16_t nums16[] = {1, 2, 3, 4};
 uint8_t nums8[]  = {1, 2, 3, 4};
 
+typedef struct {
+  int num_feet;
+  char *name;
+  int num_fur_hairs;
+  int teeth;
+  char alive;
+} Cat;
+
+
 void print_hex(uint8_t* data, size_t count) {
   size_t row_count = 8;
 
@@ -21,7 +30,21 @@ void print_hex(uint8_t* data, size_t count) {
 }
 
 int main(int argc, char *argv[]) {
+  int a;
+  Cat thunder_pickles;
+  char name[64];
 
+  thunder_pickles.num_feet = 4;
+  thunder_pickles.num_fur_hairs = 1;
+  thunder_pickles.teeth = 32;
+  thunder_pickles.alive = 127;
+
+  scanf("%s", name);
+  thunder_pickles.name = name;
+
+  print_hex((uint8_t*)&thunder_pickles, sizeof(thunder_pickles));
+
+  /*
   printf("str:\n");
   print_hex((uint8_t*)str, sizeof(str));
 
@@ -33,6 +56,6 @@ int main(int argc, char *argv[]) {
 
   printf("nums8:\n");
   print_hex((uint8_t*)nums8, sizeof(nums8));
-
+  */
   return 0;
 }
