@@ -39,12 +39,12 @@ int main(int argc, char *argv[]) {
   thunder_pickles.teeth = 32;
   thunder_pickles.alive = 127;
 
+  printf("thunder_pickles: name = ");
   scanf("%s", name);
   thunder_pickles.name = name;
 
   print_hex((uint8_t*)&thunder_pickles, sizeof(thunder_pickles));
 
-  /*
   printf("str:\n");
   print_hex((uint8_t*)str, sizeof(str));
 
@@ -56,6 +56,6 @@ int main(int argc, char *argv[]) {
 
   printf("nums8:\n");
   print_hex((uint8_t*)nums8, sizeof(nums8));
-  */
+
   return 0;
 }
