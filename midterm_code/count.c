@@ -42,8 +42,8 @@ int main(int argc, char *argv[]) {
    * BONUS: Who is often credited with this quote?
    */
   char msg[] =
-    "Choose a job you love, and you will "
-    "never have to work a day in your life.";
+    "Everything should be made as simple as "
+    "possible, but not simpler.";
 
 
   printf("Number of o's: %d\n", char_count(msg, 'o'));
