@@ -148,6 +148,11 @@ void evaluate(IntStack* stack, char* word) {
     // set the current base to the value at the top of the stack
     base = stack_pop(stack);
     if(base < 1) fail_exit("invalid base '%d'. Base must be greater than 0", base);
+  } else if(strcmp(word, "swap") == 0) {
+    int a = stack_pop(stack);
+    int b = stack_pop(stack);
+    stack_push(stack, a);
+    stack_push(stack, b);
   } else if(strcmp(word, "+") == 0) {
     // addition
     int b = stack_pop(stack);
