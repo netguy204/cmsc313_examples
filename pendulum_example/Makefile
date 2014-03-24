@@ -6,6 +6,12 @@ BINS=\
 CFLAGS+=-std=c99
 LDFLAGS+=`sdl2-config --static-libs`
 
+PLATFORM:=$(shell uname)
+
+ifneq ($(PLATFORM), Darwin)
+LDFLAGS+=-lGL
+endif
+
 %.bin: %.o $(OBJS)
 	$(CC) -o $@ $< $(OBJS) $(CFLAGS) $(LDFLAGS)
 
