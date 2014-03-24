@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
@@ -29,6 +30,12 @@ typedef struct {
 Vector* vector_init(Vector* v, float x, float y) {
   v->x = x;
   v->y = y;
+  return v;
+}
+
+Vector* vector_init_angle(Vector* v, float angle) {
+  v->x = sin(angle);
+  v->y = cos(angle);
   return v;
 }
 
@@ -63,6 +70,10 @@ float vector_dist(Vector* a, Vector* b) {
   float dx = a->x - b->x;
   float dy = a->y - b->y;
   return sqrt(dx * dx + dy * dy);
+}
+
+float vector_angle(Vector* a) {
+  return atan2(a->x, a->y);
 }
 
 typedef struct {
@@ -195,9 +206,9 @@ void pendulum_spring_zigzag(GLfloat* dest, int n, Vector* p1, Vector* p2) {
   vector_norm(&tangent, &tangent);
   vector_scale(&tangent, &tangent, step);
 
-  t_ang = atan2(tangent.x, tangent.y);
+  t_ang = vector_angle(&tangent);
   n_ang = t_ang + M_PI/2;
-  vector_init(&normal, sin(n_ang), cos(n_ang));
+  vector_init_angle(&normal, n_ang);
   vector_scale(&normal, &normal, 0.01);
 
   dest[idx++] = p.x;

@@ -3,7 +3,7 @@ OBJS=
 BINS=\
 	main.bin
 
-CFLAGS+=
+CFLAGS+=-std=c99
 LDFLAGS+=`sdl2-config --static-libs`
 
 %.bin: %.o $(OBJS)
