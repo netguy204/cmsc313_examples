@@ -173,8 +173,8 @@ Pendulum* pendulum_step(Pendulum* p, float dt) {
   Vector fs2 = spring_force(&p->s2, 0); // spring2 on p2
 
   // drag forces
-  Vector fd1 = particle_drag_force(&p->p1, 0.05f);
-  Vector fd2 = particle_drag_force(&p->p2, 0.05f);
+  Vector fd1 = particle_drag_force(&p->p1, 0.01f);
+  Vector fd2 = particle_drag_force(&p->p2, 0.01f);
 
   // compute the final sums
   Vector f1 = vector_add(&fg1, &fs1a);
@@ -398,7 +398,7 @@ int main(int argc, char *argv[]) {
 
   unsigned int last_tick = SDL_GetTicks();
   unsigned int remaining_ticks = 0;
-  unsigned int min_ticks = 16;
+  unsigned int min_ticks = 1;
 
   while(!finished) {
     // drain event queue
