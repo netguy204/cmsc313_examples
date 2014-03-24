@@ -3,7 +3,7 @@ OBJS=
 BINS=\
 	main.bin
 
-CFLAGS+=-std=c99
+CFLAGS+=-std=c99 -Wall
 LDFLAGS+=`sdl2-config --static-libs`
 
 PLATFORM:=$(shell uname)

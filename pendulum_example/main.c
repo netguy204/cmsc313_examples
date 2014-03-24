@@ -167,10 +167,8 @@ Pendulum* pendulum_init(Pendulum* p) {
 }
 
 Pendulum* pendulum_step(Pendulum* p, float dt) {
-  Vector f1, f2;
-
-  vector_init(&f1, 0.0f, 0.0f);
-  vector_init(&f2, 0.0f, 0.0f);
+  Vector f1 = {0.0f, 0.0f};
+  Vector f2 = {0.0f, 0.0f};
 
   // add the effects of gravity
   gravity_add_force(&f1, &p->p1);
@@ -391,7 +389,6 @@ void graphics_postrender(Context* ctx) {
 int main(int argc, char *argv[]) {
   Context ctx;
   int finished = 0;
-  int step = 0;
 
   Pendulum p;
   pendulum_init(&p);
