@@ -43,43 +43,43 @@ Vector vector_init_angle(float angle) {
   return v;
 }
 
-Vector vector_sub(Vector* a, Vector* b) {
+Vector vector_sub(const Vector* a, const Vector* b) {
   Vector result;
   result.x = a->x - b->x;
   result.y = a->y - b->y;
   return result;
 }
 
-Vector vector_add(Vector* a, Vector* b) {
+Vector vector_add(const Vector* a, const Vector* b) {
   Vector result;
   result.x = a->x + b->x;
   result.y = a->y + b->y;
   return result;
 }
 
-Vector vector_scale(Vector* a, float s) {
+Vector vector_scale(const Vector* a, float s) {
   Vector result;
   result.x = a->x * s;
   result.y = a->y * s;
   return result;
 }
 
-float vector_mag(Vector* a) {
+float vector_mag(const Vector* a) {
   return sqrt(a->x * a->x + a->y * a->y);
 }
 
-Vector vector_norm(Vector* a) {
+Vector vector_norm(const Vector* a) {
   float s = vector_mag(a);
   return vector_scale(a, 1.0 / s);
 }
 
-float vector_dist(Vector* a, Vector* b) {
+float vector_dist(const Vector* a, const Vector* b) {
   float dx = a->x - b->x;
   float dy = a->y - b->y;
   return sqrt(dx * dx + dy * dy);
 }
 
-float vector_angle(Vector* a) {
+float vector_angle(const Vector* a) {
   return atan2(a->x, a->y);
 }
 
@@ -88,18 +88,17 @@ typedef struct {
   float m;
 } Particle;
 
-Particle* particle_init(Particle* p, float m, float x, float y, float dx, float dy) {
+void particle_init(Particle* p, float m, float x, float y, float dx, float dy) {
   p->m = m;
   p->p = vector_init(x, y);
   p->v = vector_init(dx, dy);
-  return p;
 }
 
-Vector particle_drag_force(Particle* p, float c) {
+Vector particle_drag_force(const Particle* p, float c) {
   return vector_scale(&p->v, -c);
 }
 
-void particle_step(Particle* p, Vector* f, float dt) {
+void particle_step(Particle* p, const Vector* f, float dt) {
   Vector a = vector_scale(f, 1.0 / p->m); // f = ma
 
   // a = dv / dt
@@ -111,18 +110,18 @@ void particle_step(Particle* p, Vector* f, float dt) {
   p->p = vector_add(&p->p, &dx);
 }
 
-Vector gravity_force(Particle* p) {
+Vector gravity_force(const Particle* p) {
   return (Vector){0, -9.81};
 }
 
 typedef struct {
-  Vector* p1;
-  Vector* p2;
+  const Vector* p1;
+  const Vector* p2;
   float k;
   float l;
 } Spring;
 
-Spring* spring_init(Spring* s, Vector* p1, Vector* p2, float k) {
+Spring* spring_init(Spring* s, const Vector* p1, const Vector* p2, float k) {
   s->p1 = p1;
   s->p2 = p2;
   s->k = k;
@@ -130,7 +129,7 @@ Spring* spring_init(Spring* s, Vector* p1, Vector* p2, float k) {
   return s;
 }
 
-Vector spring_force(Spring* s, int negate) {
+Vector spring_force(const Spring* s) {
   float l = vector_dist(s->p1, s->p2);
   float mf = (s->l - l) * s->k;
 
@@ -138,12 +137,7 @@ Vector spring_force(Spring* s, int negate) {
   force = vector_norm(&force);
   force = vector_scale(&force, mf);
 
-  // adjust for which end of the spring is experiencing the force
-  if(negate) {
-    return vector_scale(&force, -1.0f);
-  } else {
-    return force;
-  }
+  return force;
 }
 
 typedef struct {
@@ -162,15 +156,15 @@ Pendulum* pendulum_init(Pendulum* p) {
   return p;
 }
 
-Pendulum* pendulum_step(Pendulum* p, float dt) {
+void pendulum_step(Pendulum* p, float dt) {
   // the effects of gravity
   Vector fg1 = gravity_force(&p->p1);
   Vector fg2 = gravity_force(&p->p2);
 
   // the spring forces
-  Vector fs1a = spring_force(&p->s1, 0); // spring1 on p1
-  Vector fs1b = spring_force(&p->s2, 1); // spring2 on p1
-  Vector fs2 = spring_force(&p->s2, 0); // spring2 on p2
+  Vector fs1a = spring_force(&p->s1); // spring1 on p1
+  Vector fs1b = spring_force(&p->s2); // spring2 on p1 (this is subtracted)
+  Vector fs2 = spring_force(&p->s2); // spring2 on p2
 
   // drag forces
   Vector fd1 = particle_drag_force(&p->p1, 0.01f);
@@ -178,7 +172,7 @@ Pendulum* pendulum_step(Pendulum* p, float dt) {
 
   // compute the final sums
   Vector f1 = vector_add(&fg1, &fs1a);
-  f1 = vector_add(&f1, &fs1b);
+  f1 = vector_sub(&f1, &fs1b);
   f1 = vector_add(&f1, &fd1);
 
   Vector f2 = vector_add(&fg2, &fs2);
@@ -187,16 +181,14 @@ Pendulum* pendulum_step(Pendulum* p, float dt) {
   // step the particles with the accumulated forces
   particle_step(&p->p1, &f1, dt);
   particle_step(&p->p2, &f2, dt);
-
-  return p;
 }
 
-void pendulum_print(FILE* output, Pendulum* p) {
+void pendulum_print(FILE* output, const Pendulum* p) {
   fprintf(output, "p1.p = (%f, %f)  p1.v = (%f, %f)\n", p->p1.p.x, p->p1.p.y, p->p1.v.x, p->p1.v.y);
   fprintf(output, "p2.p = (%f, %f)  p2.v = (%f, %f)\n", p->p2.p.x, p->p2.p.y, p->p2.v.x, p->p2.v.y);
 }
 
-void pendulum_spring_zigzag(GLfloat* dest, int n, Vector* p1, Vector* p2) {
+void pendulum_spring_zigzag(GLfloat* dest, int n, const Vector* p1, const Vector* p2) {
   Vector p = *p1;
   float step = vector_dist(p1, p2) / (n-1);
   int idx = 0;
@@ -231,7 +223,7 @@ void pendulum_spring_zigzag(GLfloat* dest, int n, Vector* p1, Vector* p2) {
   dest[idx++] = p2->y;
 }
 
-void pendulum_render(Context* ctx, Pendulum* p) {
+void pendulum_render(Context* ctx, const Pendulum* p) {
   GLfloat points[400];
 
   pendulum_spring_zigzag(&points[0], 100, &p->anchor, &p->p1.p);
