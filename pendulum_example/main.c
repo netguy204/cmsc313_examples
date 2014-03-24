@@ -7,6 +7,10 @@
 #define FALSE 0
 #define TRUE 1
 
+#ifndef M_PI
+#    define M_PI 3.14159265358979323846
+#endif
+
 typedef struct {
   SDL_Window* window;
   SDL_Renderer* renderer;
