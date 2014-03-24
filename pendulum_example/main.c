@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <math.h>
+#include <stdbool.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_opengl.h>
-
-#define FALSE 0
-#define TRUE 1
 
 #ifndef M_PI
 #    define M_PI 3.14159265358979323846
@@ -332,7 +330,7 @@ GLuint shader_link(const char* vertex_src, const char* fragment_src) {
   return program;
 }
 
-int graphics_init(Context* ctx) {
+bool graphics_init(Context* ctx) {
   SDL_RendererInfo info;
   SDL_Init(SDL_INIT_VIDEO);
   SDL_CreateWindowAndRenderer(ctx->w, ctx->h, SDL_WINDOW_OPENGL, &ctx->window, &ctx->renderer);
@@ -341,7 +339,7 @@ int graphics_init(Context* ctx) {
   SDL_GetRendererInfo(ctx->renderer, &info);
   if(!(info.flags & SDL_RENDERER_ACCELERATED) ||
      !(info.flags & SDL_RENDERER_TARGETTEXTURE)) {
-    return FALSE;
+    return false;
   }
   SDL_GL_CreateContext(ctx->window);
 
@@ -377,7 +375,7 @@ int graphics_init(Context* ctx) {
   // initialize VBOs
   glGenBuffers(1, &ctx->buffer);
 
-  return TRUE;
+  return true;
 }
 
 void graphics_prerender(Context* ctx) {
