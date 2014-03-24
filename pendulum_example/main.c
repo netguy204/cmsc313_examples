@@ -387,7 +387,7 @@ void graphics_postrender(Context* ctx) {
 
 int main(int argc, char *argv[]) {
   Context ctx;
-  int finished = 0;
+  bool finished = false;
 
   Pendulum p;
   pendulum_init(&p);
@@ -409,7 +409,7 @@ int main(int argc, char *argv[]) {
         pendulum_init(&p);
         break;
       case SDL_QUIT:
-        finished = 1;
+        finished = true;
         break;
       default:
         break;
