@@ -121,24 +121,19 @@ Spring* spring_init(Spring* s, Vector* p1, Vector* p2, float k) {
 
 Vector* spring_add_force(Vector* result, Spring* s, int negate) {
   float l = vector_dist(s->p1, s->p2);
+  Vector force;
+  float mf = (s->l - l) * s->k;
 
-  // like an elastic band string
-  //if(l > s->l) {
-    Vector force;
-    float mf = (s->l - l) * s->k;
+  vector_sub(&force, s->p2, s->p1);
+  vector_norm(&force, &force);
+  vector_scale(&force, &force, mf);
 
-    vector_sub(&force, s->p2, s->p1);
-    vector_norm(&force, &force);
-    vector_scale(&force, &force, mf);
+  // adjust for which end of the spring is experiencing the force
+  if(negate) {
+    vector_scale(&force, &force, -1.0f);
+  }
 
-    // adjust for which end of the spring is experiencing the force
-    if(negate) {
-      vector_scale(&force, &force, -1.0f);
-    }
-
-    vector_add(result, result, &force);
-  //}
-
+  vector_add(result, result, &force);
   return result;
 }
 
@@ -174,8 +169,8 @@ Pendulum* pendulum_step(Pendulum* p, float dt) {
   spring_add_force(&f2, &p->s2, 0); // spring2 on p2
 
   // apply drag
-  particle_add_drag_force(&f1, &p->p1, 0.1f);
-  particle_add_drag_force(&f2, &p->p2, 0.1f);
+  particle_add_drag_force(&f1, &p->p1, 0.05f);
+  particle_add_drag_force(&f2, &p->p2, 0.05f);
 
   // step the particles with the accumulated forces
   particle_step(&p->p1, &f1, dt);
@@ -189,12 +184,50 @@ void pendulum_print(FILE* output, Pendulum* p) {
   fprintf(output, "p2.p = (%f, %f)  p2.v = (%f, %f)\n", p->p2.p.x, p->p2.p.y, p->p2.v.x, p->p2.v.y);
 }
 
+void pendulum_spring_zigzag(GLfloat* dest, int n, Vector* p1, Vector* p2) {
+  Vector p = *p1;
+  Vector tangent, normal;
+  float t_ang, n_ang;
+  float step = vector_dist(p1, p2) / (n-1);
+  int idx = 0;
+
+  vector_sub(&tangent, p2, p1);
+  vector_norm(&tangent, &tangent);
+  vector_scale(&tangent, &tangent, step);
+
+  t_ang = atan2(tangent.x, tangent.y);
+  n_ang = t_ang + M_PI/2;
+  vector_init(&normal, sin(n_ang), cos(n_ang));
+  vector_scale(&normal, &normal, 0.01);
+
+  dest[idx++] = p.x;
+  dest[idx++] = p.y;
+
+  for(int i = 1; i < n-1; i++) {
+    Vector np;
+
+    vector_add(&p, &p, &tangent);
+
+    if(i % 2 == 0) {
+      np = normal;
+    } else {
+      vector_scale(&np, &normal, -1);
+    }
+
+    vector_add(&np, &np, &p);
+    dest[idx++] = np.x;
+    dest[idx++] = np.y;
+  }
+
+  dest[idx++] = p2->x;
+  dest[idx++] = p2->y;
+}
+
 void pendulum_render(Context* ctx, Pendulum* p) {
-  GLfloat points[] = {
-    p->anchor.x, p->anchor.y,
-    p->p1.p.x, p->p1.p.y,
-    p->p2.p.x, p->p2.p.y
-  };
+  GLfloat points[400];
+
+  pendulum_spring_zigzag(&points[0], 100, &p->anchor, &p->p1.p);
+  pendulum_spring_zigzag(&points[200], 100, &p->p1.p, &p->p2.p);
 
   glUseProgram(ctx->filled);
 
@@ -203,7 +236,7 @@ void pendulum_render(Context* ctx, Pendulum* p) {
   glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
   glVertexAttribPointer(ATTR_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-  glDrawArrays(GL_LINE_STRIP, 0, 3);
+  glDrawArrays(GL_LINE_STRIP, 0, sizeof(points) / (sizeof(GLfloat) * 2));
   glDisableVertexAttribArray(ATTR_VERTEX);
 }
 
@@ -298,7 +331,6 @@ int graphics_init(Context* ctx) {
   SDL_GL_CreateContext(ctx->window);
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-  //SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 
   // some standard opengl choices
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -327,7 +359,6 @@ int graphics_init(Context* ctx) {
   glBindAttribLocation(ctx->filled, ATTR_VERTEX, "vertex");
   gl_check("glBindAttribLocation");
 
-
   // initialize VBOs
   glGenBuffers(1, &ctx->buffer);
 
@@ -353,7 +384,7 @@ int main(int argc, char *argv[]) {
   pendulum_init(&p);
 
   ctx.w = 800;
-  ctx.h = 600;
+  ctx.h = 800;
   graphics_init(&ctx);
 
   unsigned int last_tick = SDL_GetTicks();
@@ -399,17 +430,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-
-/*
-int main(int argc, char *argv[]) {
-  Pendulum p;
-  pendulum_init(&p);
-
-  for(int ii = 0; ii < 10; ii++) {
-    pendulum_print(stderr, &p);
-    pendulum_step(&p, 0.1);
-  }
-
-  return 0;
-}
-*/
