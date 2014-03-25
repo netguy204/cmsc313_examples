@@ -216,12 +216,13 @@ void gl_check(const char * msg) {
   fprintf(stderr, "GL_ERROR: %s => %s\n", msg, e_msg);
 }
 
+// macro to run a command followed by a call to gl_check
+#define GL_CHECK(x) x; gl_check(#x)
+
 GLuint shader_compile(const char* shader_src, GLenum kind) {
   GLuint shader = glCreateShader(kind);
-  glShaderSource(shader, 1, &shader_src, NULL);
-  gl_check("glShaderSource");
-  glCompileShader(shader);
-  gl_check("glCompileShader");
+  GL_CHECK(glShaderSource(shader, 1, &shader_src, NULL));
+  GL_CHECK(glCompileShader(shader));
 
   int status;
   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
@@ -241,13 +242,10 @@ GLuint shader_link(const char* vertex_src, const char* fragment_src) {
   GLuint vertex = shader_compile(vertex_src, GL_VERTEX_SHADER);
   GLuint fragment = shader_compile(fragment_src, GL_FRAGMENT_SHADER);
 
-  glAttachShader(program, vertex);
-  gl_check("glAttachShader");
-  glAttachShader(program, fragment);
-  gl_check("glAttachShader");
+  GL_CHECK(glAttachShader(program, vertex));
+  GL_CHECK(glAttachShader(program, fragment));
 
-  glLinkProgram(program);
-  gl_check("glLinkProgram");
+  GL_CHECK(glLinkProgram(program));
 
   int status;
   glGetProgramiv(program, GL_LINK_STATUS, &status);
@@ -306,8 +304,7 @@ bool graphics_init(Context* ctx) {
     "}";
 
   ctx->filled = shader_link(solid_vs, solid_fs);
-  glBindAttribLocation(ctx->filled, ATTR_VERTEX, "vertex");
-  gl_check("glBindAttribLocation");
+  GL_CHECK(glBindAttribLocation(ctx->filled, ATTR_VERTEX, "vertex"));
 
   // initialize VBOs
   glGenBuffers(1, &ctx->buffer);
