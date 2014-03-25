@@ -10,22 +10,6 @@
 #endif
 
 typedef struct {
-  SDL_Window* window;
-  SDL_Renderer* renderer;
-  int w, h;
-
-  // shaders
-  GLuint filled;
-
-  // vbo
-  GLuint buffer;
-} Context;
-
-typedef enum {
-  ATTR_VERTEX
-} ProgramAttributes;
-
-typedef struct {
   float x, y;
 } Vector;
 
@@ -188,57 +172,21 @@ void pendulum_print(FILE* output, const Pendulum* p) {
   fprintf(output, "p2.p = (%f, %f)  p2.v = (%f, %f)\n", p->p2.p.x, p->p2.p.y, p->p2.v.x, p->p2.v.y);
 }
 
-void pendulum_spring_zigzag(GLfloat* dest, int n, const Vector* p1, const Vector* p2) {
-  Vector p = *p1;
-  float step = vector_dist(p1, p2) / (n-1);
-  int idx = 0;
+typedef struct {
+  SDL_Window* window;
+  SDL_Renderer* renderer;
+  int w, h;
 
-  Vector tangent = vector_sub(p2, p1);
-  tangent = vector_scale(&tangent, step / vector_mag(&tangent));
+  // shaders
+  GLuint filled;
 
-  float t_ang = vector_angle(&tangent);
-  float n_ang = t_ang + M_PI/2;
-  Vector normal = vector_init_angle(n_ang);
-  normal = vector_scale(&normal, 0.01);
+  // vbo
+  GLuint buffer;
+} Context;
 
-  dest[idx++] = p.x;
-  dest[idx++] = p.y;
-
-  for(int i = 1; i < n-1; i++) {
-    Vector np;
-    p = vector_add(&p, &tangent);
-
-    if(i % 2 == 0) {
-      np = normal;
-    } else {
-      np = vector_scale(&normal, -1);
-    }
-
-    np = vector_add(&np, &p);
-    dest[idx++] = np.x;
-    dest[idx++] = np.y;
-  }
-
-  dest[idx++] = p2->x;
-  dest[idx++] = p2->y;
-}
-
-void pendulum_render(Context* ctx, const Pendulum* p) {
-  GLfloat points[400];
-
-  pendulum_spring_zigzag(&points[0], 100, &p->anchor, &p->p1.p);
-  pendulum_spring_zigzag(&points[200], 100, &p->p1.p, &p->p2.p);
-
-  glUseProgram(ctx->filled);
-
-  glEnableVertexAttribArray(ATTR_VERTEX);
-  glBindBuffer(GL_ARRAY_BUFFER, ctx->buffer);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
-  glVertexAttribPointer(ATTR_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-  glDrawArrays(GL_LINE_STRIP, 0, sizeof(points) / (sizeof(GLfloat) * 2));
-  glDisableVertexAttribArray(ATTR_VERTEX);
-}
+typedef enum {
+  ATTR_VERTEX
+} ProgramAttributes;
 
 /*
  * report any pending opengl error messages
@@ -375,7 +323,57 @@ void graphics_postrender(Context* ctx) {
   SDL_GL_SwapWindow(ctx->window);
 }
 
+void pendulum_spring_zigzag(GLfloat* dest, int n, const Vector* p1, const Vector* p2) {
+  Vector p = *p1;
+  float step = vector_dist(p1, p2) / (n-1);
+  int idx = 0;
 
+  Vector tangent = vector_sub(p2, p1);
+  tangent = vector_scale(&tangent, step / vector_mag(&tangent));
+
+  float t_ang = vector_angle(&tangent);
+  float n_ang = t_ang + M_PI/2;
+  Vector normal = vector_init_angle(n_ang);
+  normal = vector_scale(&normal, 0.01);
+
+  dest[idx++] = p.x;
+  dest[idx++] = p.y;
+
+  for(int i = 1; i < n-1; i++) {
+    Vector np;
+    p = vector_add(&p, &tangent);
+
+    if(i % 2 == 0) {
+      np = normal;
+    } else {
+      np = vector_scale(&normal, -1);
+    }
+
+    np = vector_add(&np, &p);
+    dest[idx++] = np.x;
+    dest[idx++] = np.y;
+  }
+
+  dest[idx++] = p2->x;
+  dest[idx++] = p2->y;
+}
+
+void pendulum_render(Context* ctx, const Pendulum* p) {
+  GLfloat points[400];
+
+  pendulum_spring_zigzag(&points[0], 100, &p->anchor, &p->p1.p);
+  pendulum_spring_zigzag(&points[200], 100, &p->p1.p, &p->p2.p);
+
+  glUseProgram(ctx->filled);
+
+  glEnableVertexAttribArray(ATTR_VERTEX);
+  glBindBuffer(GL_ARRAY_BUFFER, ctx->buffer);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
+  glVertexAttribPointer(ATTR_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+  glDrawArrays(GL_LINE_STRIP, 0, sizeof(points) / (sizeof(GLfloat) * 2));
+  glDisableVertexAttribArray(ATTR_VERTEX);
+}
 
 int main(int argc, char *argv[]) {
   Context ctx;
