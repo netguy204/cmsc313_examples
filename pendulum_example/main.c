@@ -151,8 +151,8 @@ Pendulum* pendulum_init(Pendulum* p) {
   particle_init(&p->p1, 1.0f, 0.5f, 1.0f, 0.0f, 0.0f);
   particle_init(&p->p2, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f);
 
-  spring_init(&p->s1, &p->anchor, &p->p1.p, 100.5);
-  spring_init(&p->s2, &p->p1.p, &p->p2.p, 100.5);
+  spring_init(&p->s1, &p->anchor, &p->p1.p, 100.0);
+  spring_init(&p->s2, &p->p1.p, &p->p2.p, 100.0);
   return p;
 }
 
