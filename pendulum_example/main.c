@@ -181,7 +181,7 @@ typedef struct {
   GLuint filled;
 
   // vbo
-  GLuint buffer;
+  GLuint verts;
 } Context;
 
 typedef enum {
@@ -307,7 +307,7 @@ bool graphics_init(Context* ctx) {
   GL_CHECK(glBindAttribLocation(ctx->filled, ATTR_VERTEX, "vertex"));
 
   // initialize VBOs
-  glGenBuffers(1, &ctx->buffer);
+  glGenBuffers(1, &ctx->verts);
 
   return true;
 }
@@ -364,7 +364,7 @@ void pendulum_render(Context* ctx, const Pendulum* p) {
   glUseProgram(ctx->filled);
 
   glEnableVertexAttribArray(ATTR_VERTEX);
-  glBindBuffer(GL_ARRAY_BUFFER, ctx->buffer);
+  glBindBuffer(GL_ARRAY_BUFFER, ctx->verts);
   glBufferData(GL_ARRAY_BUFFER, sizeof(points), points, GL_DYNAMIC_DRAW);
   glVertexAttribPointer(ATTR_VERTEX, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
