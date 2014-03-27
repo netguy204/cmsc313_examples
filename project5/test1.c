@@ -42,6 +42,17 @@ int main(int argc, char *argv[]) {
   frac_print(stdout, e);
   printf(" ~= %lf\n", frac_approx(e));
 
+
+  // allocate and free a "large" number of fractions but never with
+  // many alive at once. A pool of only 2 fractions should be
+  // sufficient to satisfy this test.
+  for(int ii = 0; ii < 10000; ++ii) {
+    Frac* aFrac = frac_make(1,2);
+    frac_free(aFrac);
+  }
+
+  // then make sure nothing obviously broke
+  frac_println(stdout, e);
   frac_free(e);
 
   return 0;
