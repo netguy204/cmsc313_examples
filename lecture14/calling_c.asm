@@ -10,15 +10,17 @@
 [SECTION .text]
 ;;; This is where our program lives.
 global _start                   ; make start global so ld can find it
-extern _add2
+extern add2
 
 _start:                         ; the program actually starts here
         push 1
         push 2
-        call _add2
-        ;; result is in eax, leave it there as the return code
+        call add2
         add esp, 8
 
+        ;; result is in eax, move it into ebx to be the return code
+        mov ebx, eax
+
         ;; call sys_exit to finish things off
-        mov ebx, 0              ; no error
+        mov eax, 1
         int 80H                 ; kernel interrupt
