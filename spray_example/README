@@ -1,0 +1,15 @@
+This example uses OpenGL and SDL2 to render a simple particle system.
+
+
+If you're using Debian or Ubuntu you can get the SDL2 dependency by
+running:
+
+$ sudo apt-get install libsdl2-dev
+
+If you're on a mac, install homebrew and then:
+
+$ brew install sdl2
+
+If you're on Windows then download a prebuilt version of SDL2 and set
+up a visual studio project that builds main.c and links the SDL2
+library. http://www.libsdl.org/download-2.0.php
