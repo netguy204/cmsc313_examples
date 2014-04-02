@@ -1,7 +1,7 @@
 #!/bin/bash
 
 NASM="nasm -f elf -g -F stabs"
-GCC="gcc -m32"
+GCC="gcc -m32 -g"
 LD="ld -melf_i386"
 
 function echodo {

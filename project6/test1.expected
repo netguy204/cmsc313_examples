@@ -1,0 +1,6 @@
+Test `Initial capacity > 0': PASS
+Test `Initial size == 0': PASS
+Test `Size is allowed to grow to capacity': PASS
+Test `Capacity grows when necessary': PASS
+Test `Capacity shrinks when able': PASS
+Test `Aged out records are removed correctly': PASS

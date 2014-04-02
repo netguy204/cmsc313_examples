@@ -3,11 +3,12 @@ OBJS=\
 	frac_ops.o
 
 BINS=\
-	test1.bin
+	test1.bin \
+	test2.bin
 
 BIN_OBJS=$(patsubst %.bin, %.o, $(BINS))
 
-CFLAGS+=-m32 -std=c99
+CFLAGS+=-m32 -std=c99 -g
 LDFLAGS+=-lm
 
 %.bin: %.o $(OBJS)
