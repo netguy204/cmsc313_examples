@@ -6,3 +6,6 @@
 
 poly: poly.o poly_hack.o
 	$(CC) -m32 -g -o $@ $^
+
+clean:
+	rm *.o poly

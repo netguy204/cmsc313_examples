@@ -18,7 +18,7 @@ typedef struct Method_ {
 } Method;
 
 Method* method_new(const char* name, IMP imp) {
-  Method* method = (Method*)malloc(sizeof(Method));
+  Method* method = malloc(sizeof(Method));
   method->imp = imp;
   strncpy(method->name, name, sizeof(method->name));
   method->next = NULL;
@@ -36,14 +36,16 @@ typedef struct Object {
   Class* class;
 } Object;
 
-Class* class_new(Class* parent, size_t inst_size, const char* name) {
-  Class* class = (Class*)malloc(sizeof(Class));
+Class* class_new_(Class* parent, size_t inst_size, const char* name) {
+  Class* class = malloc(sizeof(Class));
   class->parent = parent;
   class->methods = NULL;
   class->inst_size = inst_size;
   strncpy(class->name, name, sizeof(class->name));
   return class;
 }
+
+#define class_new(p, t) class_new_(p, sizeof(t), #t)
 
 id error_call(Method* method, Object* obj, ...) {
   fprintf(stderr, "Method `%s' does not exist on class %s\n", method->name, obj->class->name);
@@ -73,7 +75,7 @@ Method* class_add_method(Class* class, const char* name, IMP imp) {
 }
 
 id object_new(Class* class) {
-  Object* object = (Object*)malloc(class->inst_size);
+  Object* object = malloc(class->inst_size);
   object->class = class;
   return object;
 }
@@ -139,17 +141,17 @@ id cat_greet(Method* method, Cat* cat, const char* greeter) {
 }
 
 int main(int argc, char *argv[]) {
-  Class* CObject = class_new(NULL, sizeof(Object), "Object");
+  Class* CObject = class_new(NULL, Object);
   class_add_method(CObject, "finalize", (IMP)object_finalize);
 
-  Class* CPerson = class_new(CObject, sizeof(Person), "Person");
+  Class* CPerson = class_new(CObject, Person);
   class_add_method(CPerson, "init", (IMP)person_init);
   class_add_method(CPerson, "greet", (IMP)person_greet);
 
-  Class* CFriend = class_new(CPerson, sizeof(Person), "Friend");
+  Class* CFriend = class_new(CPerson, Person);
   class_add_method(CFriend, "greet", (IMP)friend_greet);
 
-  Class* CCat = class_new(CObject, sizeof(Cat), "Cat");
+  Class* CCat = class_new(CObject, Cat);
   class_add_method(CCat, "init", (IMP)cat_init);
   class_add_method(CCat, "greet", (IMP)cat_greet);
 
