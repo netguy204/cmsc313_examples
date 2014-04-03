@@ -29,22 +29,31 @@ typedef struct Class_ {
   struct Class_ *parent;
   Method* methods;
   size_t inst_size;
+  char name[32];
 } Class;
 
 typedef struct Object {
   Class* class;
 } Object;
 
-Class* class_new(Class* parent, size_t inst_size) {
+Class* class_new(Class* parent, size_t inst_size, const char* name) {
   Class* class = (Class*)malloc(sizeof(Class));
   class->parent = parent;
   class->methods = NULL;
   class->inst_size = inst_size;
+  strncpy(class->name, name, sizeof(class->name));
   return class;
 }
 
+id error_call(Method* method, Object* obj, ...) {
+  fprintf(stderr, "Method `%s' does not exist on class %s\n", method->name, obj->class->name);
+  exit(1);
+  return NULL;
+}
+
 Method* class_find_method(Class* class, const char* name) {
-  if(class == NULL) return NULL;
+
+  if(class == NULL) return method_new(name, (IMP)error_call);
 
   Method* method = class->methods;
   while(method) {
@@ -70,7 +79,13 @@ id object_new(Class* class) {
 }
 
 void object_free(id object) {
+  object_call("finalize", object);
   free(object);
+}
+
+id object_finalize(Method* method, Object* obj, ...) {
+  fprintf(stderr, "Finalizing object of class `%s'\n", obj->class->name);
+  return obj;
 }
 
 /*
@@ -124,14 +139,17 @@ id cat_greet(Method* method, Cat* cat, const char* greeter) {
 }
 
 int main(int argc, char *argv[]) {
-  Class* CPerson = class_new(NULL, sizeof(Person));
+  Class* CObject = class_new(NULL, sizeof(Object), "Object");
+  class_add_method(CObject, "finalize", (IMP)object_finalize);
+
+  Class* CPerson = class_new(CObject, sizeof(Person), "Person");
   class_add_method(CPerson, "init", (IMP)person_init);
   class_add_method(CPerson, "greet", (IMP)person_greet);
 
-  Class* CFriend = class_new(CPerson, sizeof(Person));
+  Class* CFriend = class_new(CPerson, sizeof(Person), "Friend");
   class_add_method(CFriend, "greet", (IMP)friend_greet);
 
-  Class* CCat = class_new(CCat, sizeof(CCat));
+  Class* CCat = class_new(CObject, sizeof(Cat), "Cat");
   class_add_method(CCat, "init", (IMP)cat_init);
   class_add_method(CCat, "greet", (IMP)cat_greet);
 
@@ -147,6 +165,13 @@ int main(int argc, char *argv[]) {
   object_call("greet", jenny, "Bob");
   object_call("greet", sassy, "Bob");
   object_call("greet", tp, "Bob");
+
+  //object_call("undefined", sassy);
+
+  object_free(carl);
+  object_free(jenny);
+  object_free(sassy);
+  object_free(tp);
 
   return 0;
 }
