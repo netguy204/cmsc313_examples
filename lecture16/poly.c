@@ -74,11 +74,13 @@ Method* class_add_method(Class* class, const char* name, IMP imp) {
   return method;
 }
 
-id object_new(Class* class) {
+id object_alloc(Class* class) {
   Object* object = malloc(class->inst_size);
   object->class = class;
   return object;
 }
+
+#define object_new(c, ...) object_call("init", object_alloc(c), __VA_ARGS__)
 
 void object_free(id object) {
   object_call("finalize", object);
@@ -155,10 +157,10 @@ int main(int argc, char *argv[]) {
   class_add_method(CCat, "init", (IMP)cat_init);
   class_add_method(CCat, "greet", (IMP)cat_greet);
 
-  id carl = object_call("init", object_new(CPerson), "Carl");
-  id jenny = object_call("init", object_new(CFriend), "Jenny");
-  id sassy = object_call("init", object_new(CCat), "Sassy", 4, 0);
-  id tp = object_call("init", object_new(CCat), "Thunder Pickles", 4, 1);
+  id carl = object_new(CPerson, "Carl");
+  id jenny = object_new(CFriend, "Jenny");
+  id sassy = object_new(CCat, "Sassy", 4, 0);
+  id tp = object_new(CCat, "Thunder Pickles", 4, 1);
 
   // these calls are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
