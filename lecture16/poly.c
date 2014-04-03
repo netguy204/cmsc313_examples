@@ -69,15 +69,18 @@ id object_new(Class* class) {
   return object;
 }
 
-void object_free(Object* object) {
+void object_free(id object) {
   free(object);
 }
 
+/*
+ * Define the layout of the memory associated with a Person
+ * instance. We'll create the classes later.
+ */
 typedef struct {
   Object _;
   char name[32];
 } Person;
-
 
 id person_init(Method* method, Person* obj, const char* name) {
   strncpy(obj->name, name, sizeof(obj->name));
@@ -85,13 +88,39 @@ id person_init(Method* method, Person* obj, const char* name) {
 }
 
 id person_greet(Method* method, Person* obj, const char* greeter) {
-  printf("Hello, %s. %s says hi.\n", obj->name, greeter);
+  printf("Bob says, \"Hello, %s\".\n", obj->name, greeter);
   return obj;
 }
 
 id friend_greet(Method* method, Person* obj, const char* greeter) {
   printf("HELLO!!! %s!!!!! I'M %s!!!\n", obj->name, greeter);
   return obj;
+}
+
+/*
+ * Also define a layout for a Cat
+ */
+typedef struct {
+  Object _;
+  char name[32];
+  int legs;
+  int alive;
+} Cat;
+
+id cat_init(Method* method, Cat* cat, const char* name, int legs, int alive) {
+  strncpy(cat->name, name, sizeof(cat->name));
+  cat->legs = legs;
+  cat->alive = alive;
+  return cat;
+}
+
+id cat_greet(Method* method, Cat* cat, const char* greeter) {
+  if(cat->alive) {
+    printf("The %d legged cat named %s coldly ignores %s.\n", cat->legs, cat->name, greeter);
+  } else {
+    printf("%s is talking to a dead cat named %s. That's odd.\n", greeter, cat->name);
+  }
+  return cat;
 }
 
 int main(int argc, char *argv[]) {
@@ -102,14 +131,22 @@ int main(int argc, char *argv[]) {
   Class* CFriend = class_new(CPerson, sizeof(Person));
   class_add_method(CFriend, "greet", (IMP)friend_greet);
 
-  Person* carl = (Person*)object_call("init", object_new(CPerson), "Carl");
-  Person* jenny = (Person*)object_call("init", object_new(CFriend), "Jenny");
+  Class* CCat = class_new(CCat, sizeof(CCat));
+  class_add_method(CCat, "init", (IMP)cat_init);
+  class_add_method(CCat, "greet", (IMP)cat_greet);
+
+  id carl = object_call("init", object_new(CPerson), "Carl");
+  id jenny = object_call("init", object_new(CFriend), "Jenny");
+  id sassy = object_call("init", object_new(CCat), "Sassy", 4, 0);
+  id tp = object_call("init", object_new(CCat), "Thunder Pickles", 4, 1);
 
   // these calls are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
   // invoked on.
   object_call("greet", carl, "Bob");
   object_call("greet", jenny, "Bob");
+  object_call("greet", sassy, "Bob");
+  object_call("greet", tp, "Bob");
 
   return 0;
 }
