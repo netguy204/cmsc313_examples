@@ -3,13 +3,15 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <memory.h>
-
 #include <stdio.h>
+#include <string.h>
 
 struct Class;
+struct Header;
 
 struct Header {
   struct Class* class;
+  struct Header* ar_next;
   int refcount;
 };
 
@@ -17,6 +19,7 @@ struct Method;
 
 typedef id (*IMP)(struct Method*, id obj, ...);
 #define header_get(obj) ((struct Header*)((char*)obj - sizeof(struct Header)))
+#define header_obj(hdr) ((id)((char*)hdr + sizeof(struct Header)))
 
 id header_get_(id obj) {
   return header_get(obj);
@@ -41,12 +44,14 @@ struct Class {
 struct RootClass {
   struct Class _;
   struct Class* classes;
+  struct Header* ar_queue;
 };
 
 id object_malloc(size_t base_size, struct Class* class) {
   struct Header* header = malloc(base_size + sizeof(struct Header));
   header->class = class;
   header->refcount = 1;
+  header->ar_next = NULL;
 
   return (char*)header + sizeof(struct Header);
 }
@@ -162,6 +167,10 @@ id class_find(struct Method* method, struct Class* class, const char* name) {
   return NULL;
 }
 
+id class_release(struct Method* method, id class) {
+  return class;
+}
+
 id object_init(struct Method* method, id object) {
   return object;
 }
@@ -185,14 +194,54 @@ id object_class(struct Method* m, id object) {
   return header_get(object)->class;
 }
 
+id object_autorelease(struct Method* m, id object) {
+  struct RootClass* root = class_root(NULL, object_class(NULL, object));
+  struct Header* header = header_get(object);
+  header->ar_next = root->ar_queue;
+  root->ar_queue = header;
+  return object;
+}
+
+id object_release_pending(struct Method* m, id object) {
+  struct RootClass* root = class_root(NULL, object_class(NULL, object));
+  struct Header* next = root->ar_queue;
+  while(next) {
+    object_call("release", header_obj(next));
+    next = next->ar_next;
+  }
+  root->ar_queue = NULL;
+  return object;
+}
+
 id object_finalize(struct Method* method, id obj, ...) {
   fprintf(stderr, "Finalizing object of class `%s'\n", header_get(obj)->class->name);
   return obj;
 }
 
+id object_string(struct Method* method, id obj) {
+  struct Class* class = object_call("class", obj);
+  char buffer[128];
+  snprintf(buffer, sizeof(buffer), "<%s: %p %lu bytes>", class->name, obj, class->inst_size);
+  return object_call("autorelease", object_new(object_call("find", class, "String"), buffer));
+}
+
+id object_cstring(struct Method* method, id obj) {
+  return object_call("cstring", object_call("string", obj));
+}
+
+id object_print(struct Method* method, id obj, FILE* target) {
+  fprintf(target, "%s", object_call("cstring", obj));
+  return obj;
+}
+
+id object_println(struct Method* method, id obj, FILE* target) {
+  fprintf(target, "%s\n", object_call("cstring", obj));
+  return obj;
+}
+
 id object_dump(struct Method* m, id obj, FILE* target) {
   struct Class* class = object_call("class", obj);
-  fprintf(target, "<%s: %p> (%lu bytes)\n", class->name, obj, class->inst_size);
+  fprintf(target, "%s\n", object_call("cstring", obj));
 
   while(class) {
     fprintf(target, "%s\n", class->name);
@@ -207,6 +256,29 @@ id object_dump(struct Method* m, id obj, FILE* target) {
 }
 
 // standard library stuff
+struct String {
+  char* cstr;
+};
+
+id string_init(id method, struct String* str, const char* init) {
+  size_t len = strlen(init);
+  str->cstr = malloc(len + 1);
+  memcpy(str->cstr, init, len);
+  str->cstr[len] = '\0';
+
+  return str;
+}
+
+id string_finalize(id method, struct String* str) {
+  object_supercall(method, str);
+  free(str->cstr);
+  return str;
+}
+
+id string_cstring(id method, struct String* str) {
+  return str->cstr;
+}
+
 struct Array {
   size_t size;
   size_t capacity;
@@ -247,9 +319,9 @@ id array_element_at(id method, struct Array* arr, size_t idx) {
   return arr->buffer[idx];
 }
 
-id array_foreach(id method, struct Array* arr, const char* message) {
+id array_foreach(id method, struct Array* arr, const char* message, id _1, id _2, id _3, id _4) {
   for(size_t i = 0; i < arr->size; ++i) {
-    object_call(message, arr->buffer[i]);
+    object_call(message, arr->buffer[i], _1, _2, _3, _4);
   }
   return arr;
 }
@@ -270,6 +342,8 @@ id oo_init() {
   Object->_.inst_size = 0;
   Object->_.next = NULL;
   Object->classes = (struct Class*)Object;
+  Object->ar_queue = NULL;
+
   strcpy(Object->_.name, "Object");
 
   class_init(NULL, Class, (struct Class*)Object, "Class", sizeof(struct Class));
@@ -288,16 +362,28 @@ id oo_init() {
   // and use this mechanism to add the init/finalize method to object
   object_call("add_method", Object, "retain", object_retain);
   object_call("add_method", Object, "release", object_release);
+  object_call("add_method", Object, "autorelease", object_autorelease);
   object_call("add_method", Object, "finalize", object_finalize);
   object_call("add_method", Object, "dump", object_dump);
   object_call("add_method", Object, "class", object_class);
+  object_call("add_method", Object, "string", object_string);
+  object_call("add_method", Object, "cstring", object_cstring);
+  object_call("add_method", Object, "print", object_print);
+  object_call("add_method", Object, "println", object_println);
+  object_call("add_method", Object, "release_pending", object_release_pending);
 
   // and the init and subclass methods to class
   object_call("add_method", Class, "init", class_init);
+  object_call("add_method", Class, "release", class_release);
   object_call("add_method", Class, "subclass", class_subclass);
   object_call("add_method", Class, "parent", class_parent);
   object_call("add_method", Class, "root", class_root);
   object_call("add_method", Class, "find", class_find);
+
+  id String = class_new(Object, struct String, "String");
+  object_call("add_method", String, "init", string_init);
+  object_call("add_method", String, "finalize", string_finalize);
+  object_call("add_method", String, "cstring", string_cstring);
 
   id Array = class_new(Object, struct Array, "Array");
   object_call("add_method", Array, "init", array_init);
