@@ -73,10 +73,15 @@ int main(int argc, char *argv[]) {
   id Array = object_call("find", Object, "Array");
   id array = object_new(Array);
 
-  object_call("push", array, object_call("autorelease", object_new(Person, "Carl")));
-  object_call("push", array, object_call("autorelease", object_new(Friend, "Jenny")));
-  object_call("push", array, object_call("autorelease", object_new(Cat, "Sassy", 4, 0)));
-  id tp = object_call("push", array, object_call("autorelease", object_new(Cat, "Thunder Pickles", 4, 1)));
+  id carl = object_call("autorelease", object_new(Person, "Carl"));
+  id jenny = object_call("autorelease", object_new(Friend, "Jenny"));
+  id sassy = object_call("autorelease", object_new(Cat, "Sassy", 4, 0));
+  id tp = object_call("autorelease", object_new(Cat, "Thunder Pickles", 4, 1));
+
+  object_call("push", array, carl);
+  object_call("push", array, jenny);
+  object_call("push", array, sassy);
+  object_call("push", array, tp);
 
   for(int ii = 0; ii < 10; ii++) {
     object_call("push", array, tp);
