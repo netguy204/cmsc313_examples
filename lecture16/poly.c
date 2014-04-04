@@ -1,3 +1,5 @@
+#include "poly.h"
+
 #include <stddef.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -6,46 +8,41 @@
 
 struct Object;
 struct Method;
-typedef void* id;
 
 typedef id (*IMP)(struct Method*, struct Object* obj, ...);
-id object_call(const char* method_name, id object, ...);
 
 typedef struct Method_ {
+  Object _;
+  struct Class_* owner;
   IMP imp;
   char name[32];
   struct Method_* next;
 } Method;
 
-Method* method_new(const char* name, IMP imp) {
-  Method* method = malloc(sizeof(Method));
-  method->imp = imp;
-  strncpy(method->name, name, sizeof(method->name));
-  method->next = NULL;
-  return method;
-}
-
 typedef struct Class_ {
-  struct Class_ *parent;
+  Object _;
+  struct Class_* parent;
+  id method_class;
   Method* methods;
   size_t inst_size;
   char name[32];
 } Class;
 
-typedef struct Object {
-  Class* class;
-} Object;
-
-Class* class_new_(Class* parent, size_t inst_size, const char* name) {
-  Class* class = malloc(sizeof(Class));
-  class->parent = parent;
-  class->methods = NULL;
-  class->inst_size = inst_size;
-  strncpy(class->name, name, sizeof(class->name));
-  return class;
+Method* method_add(Class* owner, Class* mclass, const char* name, IMP imp) {
+  Method* method = malloc(sizeof(Method));
+  method->_.class = mclass;
+  method->_.refcount = 1;
+  method->owner = owner;
+  method->imp = imp;
+  strncpy(method->name, name, sizeof(method->name));
+  method->next = owner ? owner->methods : NULL;
+  if(owner) owner->methods = method;
+  return method;
 }
 
-#define class_new(p, t) class_new_(p, sizeof(t), #t)
+IMP method_imp(Method* method) {
+  return method->imp;
+}
 
 id error_call(Method* method, Object* obj, ...) {
   fprintf(stderr, "Method `%s' does not exist on class %s\n", method->name, obj->class->name);
@@ -53,9 +50,8 @@ id error_call(Method* method, Object* obj, ...) {
   return NULL;
 }
 
-Method* class_find_method(Class* class, const char* name) {
-
-  if(class == NULL) return method_new(name, (IMP)error_call);
+id class_find_method(Method* m, Class* class, const char* name) {
+  if(class == NULL) return method_add(NULL, NULL, name, (IMP)error_call);
 
   Method* method = class->methods;
   while(method) {
@@ -64,27 +60,70 @@ Method* class_find_method(Class* class, const char* name) {
     }
     method = method->next;
   }
-  return class_find_method(class->parent, name);
+  return class_find_method(m, class->parent, name);
 }
 
-Method* class_add_method(Class* class, const char* name, IMP imp) {
-  Method* method = method_new(name, imp);
+id method_find_supermethod(Method* m, Method* method) {
+  Class* class = method->owner->parent;
+  return class_find_method(NULL, class, method->name);
+}
+
+id method_init(Method* m, Method* method, Class* owner, const char* name, IMP imp) {
+  object_supercall(m, method);
+  method->owner = owner;
+  method->imp = imp;
+  strncpy(method->name, name, sizeof(method->name));
+  method->next = NULL;
+  return method;
+}
+
+id class_alloc_object(Method* method, Class* class) {
+  Object* obj = malloc(class->inst_size);
+  obj->class = class;
+  obj->refcount = 1;
+  return obj;
+}
+
+id class_add_method(Method* m, Class* class, const char* name, IMP imp) {
+  Method* method = object_call("init", object_call("alloc", class->method_class), class, name, imp);
   method->next = class->methods;
   class->methods = method;
   return method;
 }
 
-id object_alloc(Class* class) {
-  Object* object = malloc(class->inst_size);
-  object->class = class;
+id class_init(Method* method, Class* class, Class* parent, const char* name, size_t size) {
+  // special case since this is used during bootstrap
+  if(method) object_supercall(method, class);
+
+  class->parent = parent;
+  class->method_class = parent->method_class;
+  class->methods = NULL;
+  class->inst_size = size;
+  strncpy(class->name, name, sizeof(class->name));
+  return class;
+}
+
+id class_subclass(Method* method, Class* class, const char* name, size_t size) {
+  return object_call("init", object_call("alloc", class->_.class), class, name, size);
+}
+
+id object_init(Method* method, id object) {
   return object;
 }
 
-#define object_new(c, ...) object_call("init", object_alloc(c), __VA_ARGS__)
+id object_retain(Method* m, Object* object) {
+  object->refcount += 1;
+  return object;
+}
 
-void object_free(id object) {
-  object_call("finalize", object);
-  free(object);
+id object_release(Method* m, Object* object) {
+  object->refcount -= 1;
+  if(object->refcount <= 0) {
+    object_call("finalize", object);
+    free(object);
+    return NULL;
+  }
+  return object;
 }
 
 id object_finalize(Method* method, Object* obj, ...) {
@@ -92,90 +131,67 @@ id object_finalize(Method* method, Object* obj, ...) {
   return obj;
 }
 
-/*
- * Define the layout of the memory associated with a Person
- * instance. We'll create the classes later.
- */
-typedef struct {
-  Object _;
-  char name[32];
-} Person;
+id object_dump(Method* m, Object* obj, FILE* target) {
+  Class* class = obj->class;
+  fprintf(target, "<%s: %p> (%lu bytes)\n", class->name, obj, class->inst_size);
 
-id person_init(Method* method, Person* obj, const char* name) {
-  strncpy(obj->name, name, sizeof(obj->name));
-  return obj;
-}
-
-id person_greet(Method* method, Person* obj, const char* greeter) {
-  printf("Bob says, \"Hello, %s\".\n", obj->name, greeter);
-  return obj;
-}
-
-id friend_greet(Method* method, Person* obj, const char* greeter) {
-  printf("HELLO!!! %s!!!!! I'M %s!!!\n", obj->name, greeter);
-  return obj;
-}
-
-/*
- * Also define a layout for a Cat
- */
-typedef struct {
-  Object _;
-  char name[32];
-  int legs;
-  int alive;
-} Cat;
-
-id cat_init(Method* method, Cat* cat, const char* name, int legs, int alive) {
-  strncpy(cat->name, name, sizeof(cat->name));
-  cat->legs = legs;
-  cat->alive = alive;
-  return cat;
-}
-
-id cat_greet(Method* method, Cat* cat, const char* greeter) {
-  if(cat->alive) {
-    printf("The %d legged cat named %s coldly ignores %s.\n", cat->legs, cat->name, greeter);
-  } else {
-    printf("%s is talking to a dead cat named %s. That's odd.\n", greeter, cat->name);
+  while(class) {
+    fprintf(target, "%s\n", class->name);
+    Method* method = class->methods;
+    while(method) {
+      fprintf(target, "- %s\n", method->name);
+      method = method->next;
+    }
+    class = class->parent;
   }
-  return cat;
+  return obj;
 }
 
-int main(int argc, char *argv[]) {
-  Class* CObject = class_new(NULL, Object);
-  class_add_method(CObject, "finalize", (IMP)object_finalize);
+void oo_init(id* _object) {
+  // initialize the "braid" of objects/classes/methods
+  Class* object = malloc(sizeof(Class));
+  Class* class = malloc(sizeof(Class));
+  Class* method = malloc(sizeof(Class));
 
-  Class* CPerson = class_new(CObject, Person);
-  class_add_method(CPerson, "init", (IMP)person_init);
-  class_add_method(CPerson, "greet", (IMP)person_greet);
+  // Classes are Objects
+  // The object, class, and method objects are all instances of a Class
+  object->_.class = class;
+  class->_.class = class;
+  method->_.class = class;
 
-  Class* CFriend = class_new(CPerson, Person);
-  class_add_method(CFriend, "greet", (IMP)friend_greet);
+  object->_.refcount = 1;
+  class->_.refcount = 1;
+  method->_.refcount = 1;
 
-  Class* CCat = class_new(CObject, Cat);
-  class_add_method(CCat, "init", (IMP)cat_init);
-  class_add_method(CCat, "greet", (IMP)cat_greet);
+  // Object is the root (but things bottom out at NULL)
+  object->parent = NULL;
+  object->method_class = method;
+  object->methods = NULL;
+  object->inst_size = sizeof(Object);
+  strcpy(object->name, "Object");
 
-  id carl = object_new(CPerson, "Carl");
-  id jenny = object_new(CFriend, "Jenny");
-  id sassy = object_new(CCat, "Sassy", 4, 0);
-  id tp = object_new(CCat, "Thunder Pickles", 4, 1);
+  class_init(NULL, class, object, "Class", sizeof(Class));
+  class_init(NULL, method, object, "Method", sizeof(Method));
 
-  // these calls are polymorphic because the behavior of the "greet"
-  // method depends on the class of the object that it is being
-  // invoked on.
-  object_call("greet", carl, "Bob");
-  object_call("greet", jenny, "Bob");
-  object_call("greet", sassy, "Bob");
-  object_call("greet", tp, "Bob");
+  // wire up the alloc method on class
+  method_add(class, method, "alloc", (IMP)class_alloc_object);
 
-  //object_call("undefined", sassy);
+  // and the init method on method/object
+  method_add(method, method, "init", (IMP)method_init);
+  method_add(object, method, "init", (IMP)object_init);
 
-  object_free(carl);
-  object_free(jenny);
-  object_free(sassy);
-  object_free(tp);
+  // finally add the add_method method to class
+  method_add(class, method, "add_method", (IMP)class_add_method);
 
-  return 0;
+  // and use this mechanism to add the init/finalize method to object
+  object_call("add_method", object, "retain", object_retain);
+  object_call("add_method", object, "release", object_release);
+  object_call("add_method", object, "finalize", object_finalize);
+  object_call("add_method", object, "dump", object_dump);
+
+  // and the init and subclass methods to class
+  object_call("add_method", class, "init", class_init);
+  object_call("add_method", class, "subclass", class_subclass);
+
+  *_object = object;
 }

@@ -27,7 +27,7 @@ void print_hex(uint8_t* data, size_t count) {
 int main(int argc, char *argv[]) {
   Cat thunder_pickles = {4, "Thunder Pickles", 42, 10, 33};
 
-  print_hex((uint8_t*)&thunder_pickles, sizeof(thunder_pickles));
+  print_hex((uint8_t*)&print_hex, 40);
 
   return 0;
 }

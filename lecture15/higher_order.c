@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-typedef int Type;
+typedef long Type;
 typedef Type(*Mapable)(Type);
 typedef Type(*Reduceable)(Type, Type);
 
@@ -31,10 +31,10 @@ void array_print(FILE* target, SizedArray* array) {
   fprintf(target, "]\n");
 }
 
-SizedArray* map(SizedArray* array, Mapable mapper) {
+SizedArray* map(SizedArray* array, Mapable someFun) {
   SizedArray* result = array_alloc(array->size);
   for(int i = 0; i < array->size; i++) {
-    result->data[i] = mapper(array->data[i]);
+    result->data[i] = someFun(array->data[i]);
   }
   return result;
 }
@@ -49,6 +49,10 @@ Type reduce(SizedArray* array, Reduceable reducer, Type initial) {
 
 Type plus1(Type v) {
   return v + 1;
+}
+
+Type times2(Type v) {
+  return v * 2;
 }
 
 Type square(Type v) {
@@ -78,7 +82,7 @@ int main(int argc, char *argv[]) {
   SizedArray* array = upto(5);
   array_print(stdout, array);
 
-  SizedArray* array_plus1 = map(array, plus1);
+  SizedArray* array_plus1 = map(array, times2);
   array_print(stdout, array_plus1);
 
   Type array_plus1_sum = reduce(array_plus1, add, 0);

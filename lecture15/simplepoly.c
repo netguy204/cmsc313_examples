@@ -41,6 +41,13 @@ int main(int argc, char *argv[]) {
   talk(rover);
   talk(sassy);
 
+  Animal buddy;
+  buddy.talk = bark;
+  buddy.name[0] = 'B';
+  buddy.name[1] = '\0';
+
+  buddy.talk(&buddy);
+
   free(rover);
   free(sassy);
 

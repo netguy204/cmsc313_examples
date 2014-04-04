@@ -1,11 +1,16 @@
+OBJS=\
+	poly.o \
+	poly_hack.o
+
+CFLAGS=-m32 -g -std=c99
 %.o: %.asm
 	nasm -f elf -g -F stabs $<
 
 %.o: %.c
-	$(CC) -m32 -g -c $<
+	$(CC) $(CFLAGS) -c $<
 
-poly: poly.o poly_hack.o
-	$(CC) -m32 -g -o $@ $^
+poly_test: poly_test.o $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
 
 clean:
-	rm *.o poly
+	rm *.o poly_test
