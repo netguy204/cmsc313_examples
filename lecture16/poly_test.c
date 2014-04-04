@@ -19,13 +19,13 @@ id person_init(id method, struct Person* obj, const char* name) {
   return obj;
 }
 
-id person_greet(id method, struct Person* obj, const char* greeter) {
-  printf("Bob says, \"Hello, %s\".\n", obj->name, greeter);
+id person_greet(id method, struct Person* obj) {
+  printf("\"Hello, %s\".\n", obj->name);
   return obj;
 }
 
-id friend_greet(id method, struct Person* obj, const char* greeter) {
-  printf("HELLO!!! %s!!!!! I'M %s!!!\n", obj->name, greeter);
+id friend_greet(id method, struct Person* obj) {
+  printf("\"HELLO!!! %s!!!!\"\n", obj->name);
   return obj;
 }
 
@@ -47,19 +47,17 @@ id cat_init(id method, struct Cat* cat, const char* name, int legs, int alive) {
   return cat;
 }
 
-id cat_greet(id method, struct Cat* cat, const char* greeter) {
+id cat_greet(id method, struct Cat* cat) {
   if(cat->alive) {
-    printf("The %d legged cat named %s coldly ignores %s.\n", cat->legs, cat->name, greeter);
+    printf("The %d legged cat named %s coldly ignores you.\n", cat->legs, cat->name);
   } else {
-    printf("%s is talking to a dead cat named %s. That's odd.\n", greeter, cat->name);
+    printf("You are talking to a dead cat named %s. That's odd.\n", cat->name);
   }
   return cat;
 }
 
 int main(int argc, char *argv[]) {
-  id Object;
-  oo_init(&Object);
-
+  id Object = oo_init();
 
   id Person = class_new(Object, struct Person, "Person");
   object_call("add_method", Person, "init", person_init);
@@ -80,17 +78,14 @@ int main(int argc, char *argv[]) {
   id sassy = object_call("push", array, object_new(Cat, "Sassy", 4, 0));
   id tp = object_call("push", array, object_new(Cat, "Thunder Pickles", 4, 1));
 
-  for(int ii = 0; ii < 1000; ii++) {
+  for(int ii = 0; ii < 10; ii++) {
     object_call("push", array, tp);
   }
 
   // these calls are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
   // invoked on.
-  object_call("greet", carl, "Bob");
-  object_call("greet", jenny, "Bob");
-  object_call("greet", sassy, "Bob");
-  object_call("greet", tp, "Bob");
+  object_call("foreach", array, "greet");
 
   object_call("dump", jenny, stderr);
   object_call("dump", Array, stderr);

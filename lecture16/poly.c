@@ -6,59 +6,59 @@
 
 #include <stdio.h>
 
-struct Class_;
+struct Class;
 
-typedef struct {
-  struct Class_* class;
+struct Header {
+  struct Class* class;
   int refcount;
-} Header;
+};
 
 struct Method;
 
 typedef id (*IMP)(struct Method*, id obj, ...);
-#define header_get(obj) ((Header*)((char*)obj - sizeof(Header)))
+#define header_get(obj) ((struct Header*)((char*)obj - sizeof(struct Header)))
 
 id header_get_(id obj) {
   return header_get(obj);
 }
 
-typedef struct Method_ {
-  struct Class_* owner;
+struct Method {
+  struct Class* owner;
   IMP imp;
   char name[32];
-  struct Method_* next;
-} Method;
+  struct Method* next;
+};
 
-typedef struct Class_ {
-  struct Class_* parent;
-  struct Class_* next;
+struct Class {
+  struct Class* parent;
+  struct Class* next;
   id method_class;
-  Method* methods;
+  struct Method* methods;
   size_t inst_size;
   char name[32];
-} Class;
+};
 
-typedef struct {
-  Class _;
-  Class* classes;
-} RootClass;
+struct RootClass {
+  struct Class _;
+  struct Class* classes;
+};
 
-id object_malloc(size_t base_size, Class* class) {
-  Header* header = malloc(base_size + sizeof(Header));
+id object_malloc(size_t base_size, struct Class* class) {
+  struct Header* header = malloc(base_size + sizeof(struct Header));
   header->class = class;
   header->refcount = 1;
 
-  return (char*)header + sizeof(Header);
+  return (char*)header + sizeof(struct Header);
 }
 
 void object_free(id obj) {
   char* mem = (char*)obj;
-  mem = mem - sizeof(Header);
+  mem = mem - sizeof(struct Header);
   free(mem);
 }
 
-Method* method_add(Class* owner, Class* mclass, const char* name, IMP imp) {
-  Method* method = object_malloc(sizeof(Method), mclass);
+struct Method* method_add(struct Class* owner, struct Class* mclass, const char* name, IMP imp) {
+  struct Method* method = object_malloc(sizeof(struct Method), mclass);
   method->owner = owner;
   method->imp = imp;
   strncpy(method->name, name, sizeof(method->name));
@@ -67,20 +67,20 @@ Method* method_add(Class* owner, Class* mclass, const char* name, IMP imp) {
   return method;
 }
 
-IMP method_imp(Method* method) {
+IMP method_imp(struct Method* method) {
   return method->imp;
 }
 
-id error_call(Method* method, id obj, ...) {
+id error_call(struct Method* method, id obj, ...) {
   fprintf(stderr, "Method `%s' does not exist on class %s\n", method->name, header_get(obj)->class->name);
   exit(1);
   return NULL;
 }
 
-id class_find_method(Method* m, Class* class, const char* name) {
+id class_find_method(struct Method* m, struct Class* class, const char* name) {
   if(class == NULL) return method_add(NULL, NULL, name, (IMP)error_call);
 
-  Method* method = class->methods;
+  struct Method* method = class->methods;
   while(method) {
     if(strcmp(method->name, name) == 0) {
       return method;
@@ -90,12 +90,12 @@ id class_find_method(Method* m, Class* class, const char* name) {
   return class_find_method(m, class->parent, name);
 }
 
-id method_find_supermethod(Method* m, Method* method) {
-  Class* class = method->owner->parent;
+id method_find_supermethod(struct Method* m, struct Method* method) {
+  struct Class* class = method->owner->parent;
   return class_find_method(NULL, class, method->name);
 }
 
-id method_init(Method* m, Method* method, Class* owner, const char* name, IMP imp) {
+id method_init(struct Method* m, struct Method* method, struct Class* owner, const char* name, IMP imp) {
   object_supercall(m, method);
   method->owner = owner;
   method->imp = imp;
@@ -104,26 +104,27 @@ id method_init(Method* m, Method* method, Class* owner, const char* name, IMP im
   return method;
 }
 
-id class_alloc_object(Method* method, Class* class) {
+id class_alloc_object(struct Method* method, struct Class* class) {
   return object_malloc(class->inst_size, class);
 }
 
-id class_add_method(Method* m, Class* class, const char* name, IMP imp) {
-  Method* method = object_call("init", object_call("alloc", class->method_class), class, name, imp);
+id class_add_method(struct Method* m, struct Class* class, const char* name, IMP imp) {
+  struct Method* method = object_call("init", object_call("alloc", class->method_class), class, name, imp);
   method->next = class->methods;
   class->methods = method;
   return method;
 }
 
-id class_root(Method* method, Class* class) {
-  Class* root = class;
+id class_root(struct Method* method, struct Class* class) {
+  struct Class* root = class;
   while(root->parent) {
     root = root->parent;
   }
   return root;
 }
 
-id class_init(Method* method, Class* class, Class* parent, const char* name, size_t size) {
+id class_init(struct Method* method, struct Class* class, struct Class* parent,
+              const char* name, size_t size) {
   // special case since this is used during bootstrap
   if(method) object_supercall(method, class);
 
@@ -134,24 +135,24 @@ id class_init(Method* method, Class* class, Class* parent, const char* name, siz
   strncpy(class->name, name, sizeof(class->name));
 
   // add our new class to the db
-  RootClass* root = class_root(NULL, class);
+  struct RootClass* root = class_root(NULL, class);
   class->next = root->classes;
   root->classes = class;
 
   return class;
 }
 
-id class_subclass(Method* method, Class* class, const char* name, size_t size) {
+id class_subclass(struct Method* method, struct Class* class, const char* name, size_t size) {
   return object_call("init", object_call("alloc", header_get(class)->class), class, name, size);
 }
 
-id class_parent(Method* method, Class* class) {
+id class_parent(struct Method* method, struct Class* class) {
   return class->parent;
 }
 
-id class_find(Method* method, Class* class, const char* name) {
-  RootClass* root = object_call("root", class);
-  Class* next = root->classes;
+id class_find(struct Method* method, struct Class* class, const char* name) {
+  struct RootClass* root = object_call("root", class);
+  struct Class* next = root->classes;
   while(next) {
     if(strcmp(next->name, name) == 0) {
       return next;
@@ -161,16 +162,16 @@ id class_find(Method* method, Class* class, const char* name) {
   return NULL;
 }
 
-id object_init(Method* method, id object) {
+id object_init(struct Method* method, id object) {
   return object;
 }
 
-id object_retain(Method* m, id object) {
+id object_retain(struct Method* m, id object) {
   header_get(object)->refcount += 1;
   return object;
 }
 
-id object_release(Method* m, id object) {
+id object_release(struct Method* m, id object) {
   header_get(object)->refcount -= 1;
   if(header_get(object)->refcount <= 0) {
     object_call("finalize", object);
@@ -180,22 +181,22 @@ id object_release(Method* m, id object) {
   return object;
 }
 
-id object_class(Method* m, id object) {
+id object_class(struct Method* m, id object) {
   return header_get(object)->class;
 }
 
-id object_finalize(Method* method, id obj, ...) {
+id object_finalize(struct Method* method, id obj, ...) {
   fprintf(stderr, "Finalizing object of class `%s'\n", header_get(obj)->class->name);
   return obj;
 }
 
-id object_dump(Method* m, id obj, FILE* target) {
-  Class* class = object_call("class", obj);
+id object_dump(struct Method* m, id obj, FILE* target) {
+  struct Class* class = object_call("class", obj);
   fprintf(target, "<%s: %p> (%lu bytes)\n", class->name, obj, class->inst_size);
 
   while(class) {
     fprintf(target, "%s\n", class->name);
-    Method* method = class->methods;
+    struct Method* method = class->methods;
     while(method) {
       fprintf(target, "- %s\n", method->name);
       method = method->next;
@@ -246,64 +247,64 @@ id array_element_at(id method, struct Array* arr, size_t idx) {
   return arr->buffer[idx];
 }
 
-id array_foreach(id method, struct Array* arr, void(*fn)(id)) {
+id array_foreach(id method, struct Array* arr, const char* message) {
   for(size_t i = 0; i < arr->size; ++i) {
-    fn(arr->buffer[i]);
+    object_call(message, arr->buffer[i]);
   }
   return arr;
 }
 
-void oo_init(id* _object) {
+id oo_init() {
   // initialize the "braid" of objects/classes/methods
   // Classes are Objects
   // The object, class, and method objects are all instances of a Class
-  Class* class = object_malloc(sizeof(Class), NULL);
-  RootClass* object = object_malloc(sizeof(RootClass), class);
-  Class* method = object_malloc(sizeof(Class), class);
-  header_get(class)->class = class;
+  struct Class* Class = object_malloc(sizeof(struct Class), NULL);
+  struct RootClass* Object = object_malloc(sizeof(struct RootClass), Class);
+  struct Class* Method = object_malloc(sizeof(struct Class), Class);
+  header_get(Class)->class = Class;
 
   // Object is the root and holds global data for the system
-  object->_.parent = NULL;
-  object->_.method_class = method;
-  object->_.methods = NULL;
-  object->_.inst_size = 0;
-  object->_.next = NULL;
-  object->classes = (Class*)object;
-  strcpy(object->_.name, "Object");
+  Object->_.parent = NULL;
+  Object->_.method_class = Method;
+  Object->_.methods = NULL;
+  Object->_.inst_size = 0;
+  Object->_.next = NULL;
+  Object->classes = (struct Class*)Object;
+  strcpy(Object->_.name, "Object");
 
-  class_init(NULL, class, (Class*)object, "Class", sizeof(Class));
-  class_init(NULL, method, (Class*)object, "Method", sizeof(Method));
+  class_init(NULL, Class, (struct Class*)Object, "Class", sizeof(struct Class));
+  class_init(NULL, Method, (struct Class*)Object, "Method", sizeof(struct Method));
 
   // wire up the alloc method on class
-  method_add(class, method, "alloc", (IMP)class_alloc_object);
+  method_add(Class, Method, "alloc", (IMP)class_alloc_object);
 
   // and the init method on method/object
-  method_add(method, method, "init", (IMP)method_init);
-  method_add((Class*)object, method, "init", (IMP)object_init);
+  method_add(Method, Method, "init", (IMP)method_init);
+  method_add((struct Class*)Object, Method, "init", (IMP)object_init);
 
   // finally add the add_method method to class
-  method_add(class, method, "add_method", (IMP)class_add_method);
+  method_add(Class, Method, "add_method", (IMP)class_add_method);
 
   // and use this mechanism to add the init/finalize method to object
-  object_call("add_method", object, "retain", object_retain);
-  object_call("add_method", object, "release", object_release);
-  object_call("add_method", object, "finalize", object_finalize);
-  object_call("add_method", object, "dump", object_dump);
-  object_call("add_method", object, "class", object_class);
+  object_call("add_method", Object, "retain", object_retain);
+  object_call("add_method", Object, "release", object_release);
+  object_call("add_method", Object, "finalize", object_finalize);
+  object_call("add_method", Object, "dump", object_dump);
+  object_call("add_method", Object, "class", object_class);
 
   // and the init and subclass methods to class
-  object_call("add_method", class, "init", class_init);
-  object_call("add_method", class, "subclass", class_subclass);
-  object_call("add_method", class, "parent", class_parent);
-  object_call("add_method", class, "root", class_root);
-  object_call("add_method", class, "find", class_find);
+  object_call("add_method", Class, "init", class_init);
+  object_call("add_method", Class, "subclass", class_subclass);
+  object_call("add_method", Class, "parent", class_parent);
+  object_call("add_method", Class, "root", class_root);
+  object_call("add_method", Class, "find", class_find);
 
-  id Array = class_new(object, struct Array, "Array");
+  id Array = class_new(Object, struct Array, "Array");
   object_call("add_method", Array, "init", array_init);
   object_call("add_method", Array, "finalize", array_finalize);
   object_call("add_method", Array, "push", array_push);
   object_call("add_method", Array, "element_at", array_element_at);
   object_call("add_method", Array, "foreach", array_foreach);
 
-  *_object = object;
+  return Object;
 }
