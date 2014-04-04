@@ -114,6 +114,7 @@ int main(int argc, char *argv[]) {
   object_call("add_method", CArray, "init", array_init);
   object_call("add_method", CArray, "finalize", array_finalize);
   object_call("add_method", CArray, "push", array_push);
+  object_call("add_method", CArray, "element_at", array_element_at);
   object_call("add_method", CArray, "foreach", array_foreach);
 
 
@@ -135,6 +136,10 @@ int main(int argc, char *argv[]) {
   id sassy = object_call("push", array, object_new(CCat, "Sassy", 4, 0));
   id tp = object_call("push", array, object_new(CCat, "Thunder Pickles", 4, 1));
 
+  for(int ii = 0; ii < 1000; ii++) {
+    object_call("push", array, tp);
+  }
+
   // these calls are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
   // invoked on.
@@ -144,6 +149,7 @@ int main(int argc, char *argv[]) {
   object_call("greet", tp, "Bob");
 
   object_call("dump", jenny, stderr);
+  object_call("dump", object_call("find", CObject, "Array"), stderr);
   //object_call("undefined", sassy);
 
   object_call("release", carl);

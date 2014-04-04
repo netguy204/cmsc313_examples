@@ -22,11 +22,17 @@ typedef struct Method_ {
 typedef struct Class_ {
   Object _;
   struct Class_* parent;
+  struct Class_* next;
   id method_class;
   Method* methods;
   size_t inst_size;
   char name[32];
 } Class;
+
+typedef struct {
+  Class _;
+  Class* classes;
+} RootClass;
 
 Method* method_add(Class* owner, Class* mclass, const char* name, IMP imp) {
   Method* method = malloc(sizeof(Method));
@@ -91,6 +97,14 @@ id class_add_method(Method* m, Class* class, const char* name, IMP imp) {
   return method;
 }
 
+id class_root(Method* method, Class* class) {
+  Class* root = class;
+  while(root->parent) {
+    root = root->parent;
+  }
+  return root;
+}
+
 id class_init(Method* method, Class* class, Class* parent, const char* name, size_t size) {
   // special case since this is used during bootstrap
   if(method) object_supercall(method, class);
@@ -100,11 +114,33 @@ id class_init(Method* method, Class* class, Class* parent, const char* name, siz
   class->methods = NULL;
   class->inst_size = size;
   strncpy(class->name, name, sizeof(class->name));
+
+  // add our new class to the db
+  RootClass* root = class_root(NULL, class);
+  class->next = root->classes;
+  root->classes = class;
+
   return class;
 }
 
 id class_subclass(Method* method, Class* class, const char* name, size_t size) {
   return object_call("init", object_call("alloc", class->_.class), class, name, size);
+}
+
+id class_parent(Method* method, Class* class) {
+  return class->parent;
+}
+
+id class_find(Method* method, Class* class, const char* name) {
+  RootClass* root = object_call("root", class);
+  Class* next = root->classes;
+  while(next) {
+    if(strcmp(next->name, name) == 0) {
+      return next;
+    }
+    next = next->next;
+  }
+  return NULL;
 }
 
 id object_init(Method* method, id object) {
@@ -124,6 +160,10 @@ id object_release(Method* m, Object* object) {
     return NULL;
   }
   return object;
+}
+
+id object_class(Method* m, Object* object) {
+  return object->class;
 }
 
 id object_finalize(Method* method, Object* obj, ...) {
@@ -149,36 +189,38 @@ id object_dump(Method* m, Object* obj, FILE* target) {
 
 void oo_init(id* _object) {
   // initialize the "braid" of objects/classes/methods
-  Class* object = malloc(sizeof(Class));
+  RootClass* object = malloc(sizeof(RootClass));
   Class* class = malloc(sizeof(Class));
   Class* method = malloc(sizeof(Class));
 
   // Classes are Objects
   // The object, class, and method objects are all instances of a Class
-  object->_.class = class;
   class->_.class = class;
   method->_.class = class;
 
-  object->_.refcount = 1;
   class->_.refcount = 1;
   method->_.refcount = 1;
 
-  // Object is the root (but things bottom out at NULL)
-  object->parent = NULL;
-  object->method_class = method;
-  object->methods = NULL;
-  object->inst_size = sizeof(Object);
-  strcpy(object->name, "Object");
+  // Object is the root and holds global data for the system
+  object->_._.class = class;
+  object->_._.refcount = 1;
+  object->_.parent = NULL;
+  object->_.method_class = method;
+  object->_.methods = NULL;
+  object->_.inst_size = sizeof(Object);
+  object->_.next = NULL;
+  object->classes = (Class*)object;
+  strcpy(object->_.name, "Object");
 
-  class_init(NULL, class, object, "Class", sizeof(Class));
-  class_init(NULL, method, object, "Method", sizeof(Method));
+  class_init(NULL, class, (Class*)object, "Class", sizeof(Class));
+  class_init(NULL, method, (Class*)object, "Method", sizeof(Method));
 
   // wire up the alloc method on class
   method_add(class, method, "alloc", (IMP)class_alloc_object);
 
   // and the init method on method/object
   method_add(method, method, "init", (IMP)method_init);
-  method_add(object, method, "init", (IMP)object_init);
+  method_add((Class*)object, method, "init", (IMP)object_init);
 
   // finally add the add_method method to class
   method_add(class, method, "add_method", (IMP)class_add_method);
@@ -188,10 +230,14 @@ void oo_init(id* _object) {
   object_call("add_method", object, "release", object_release);
   object_call("add_method", object, "finalize", object_finalize);
   object_call("add_method", object, "dump", object_dump);
+  object_call("add_method", object, "class", object_class);
 
   // and the init and subclass methods to class
   object_call("add_method", class, "init", class_init);
   object_call("add_method", class, "subclass", class_subclass);
+  object_call("add_method", class, "parent", class_parent);
+  object_call("add_method", class, "root", class_root);
+  object_call("add_method", class, "find", class_find);
 
   *_object = object;
 }
