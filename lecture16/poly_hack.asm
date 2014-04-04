@@ -5,6 +5,7 @@ global object_supercall
 extern class_find_method
 extern method_find_supermethod
 extern method_imp
+extern header_get_
 
 object_call:
         push ebp
@@ -12,8 +13,14 @@ object_call:
 
         ;; look up the actual target of this call
         push dword [ebp + 8]    ; the name
-        mov eax, [ebp + 12]     ; the object
-        push dword [eax]        ; the class
+
+        ;; convert the object into a class
+        push dword [ebp + 12]   ; the object
+        call header_get_        ; the header
+
+        mov eax, [eax]          ; the class
+        mov [esp], eax
+
         push dword 0            ; the method (not used)
         call class_find_method
         add esp, 12
