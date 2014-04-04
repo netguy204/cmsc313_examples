@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
   object_call("add_method", Cat, "greet", cat_greet);
 
   id Array = object_call("find", Object, "Array");
-  id array = object_new(Array, 1);
+  id array = object_new(Array);
 
   id carl = object_call("push", array, object_new(Person, "Carl"));
   id jenny = object_call("push", array, object_new(Friend, "Jenny"));
