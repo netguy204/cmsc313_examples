@@ -81,7 +81,7 @@ id error_call(struct Method* method, id obj, ...) {
   return NULL;
 }
 
-id class_find_method(struct Method* m, struct Class* class, const char* name) {
+id class_find_method(id m, struct Class* class, const char* name) {
   if(class == NULL) return method_add(NULL, NULL, name, (IMP)error_call);
 
   struct Method* method = class->methods;
@@ -94,12 +94,12 @@ id class_find_method(struct Method* m, struct Class* class, const char* name) {
   return class_find_method(m, class->parent, name);
 }
 
-id method_find_supermethod(struct Method* m, struct Method* method) {
+id method_find_supermethod(id m, struct Method* method) {
   struct Class* class = method->owner->parent;
   return class_find_method(NULL, class, method->name);
 }
 
-id method_init(struct Method* m, struct Method* method, struct Class* owner, const char* name, IMP imp) {
+id method_init(id m, struct Method* method, struct Class* owner, const char* name, IMP imp) {
   object_supercall(m, method);
   method->owner = owner;
   method->imp = imp;
@@ -108,18 +108,18 @@ id method_init(struct Method* m, struct Method* method, struct Class* owner, con
   return method;
 }
 
-id class_alloc_object(struct Method* method, struct Class* class) {
+id class_alloc_object(id method, struct Class* class) {
   return object_malloc(class->inst_size, class);
 }
 
-id class_add_method(struct Method* m, struct Class* class, const char* name, IMP imp) {
+id class_add_method(id m, struct Class* class, const char* name, IMP imp) {
   struct Method* method = object_call("init", object_call("alloc", class->method_class), class, name, imp);
   method->next = class->methods;
   class->methods = method;
   return method;
 }
 
-id class_root(struct Method* method, struct Class* class) {
+id class_root(id method, struct Class* class) {
   struct Class* root = class;
   while(root->parent) {
     root = root->parent;
@@ -127,8 +127,7 @@ id class_root(struct Method* method, struct Class* class) {
   return root;
 }
 
-id class_init(struct Method* method, struct Class* class, struct Class* parent,
-              const char* name, size_t size) {
+id class_init(id method, struct Class* class, struct Class* parent, const char* name, size_t size) {
   // special case since this is used during bootstrap
   if(method) object_supercall(method, class);
 
@@ -146,15 +145,15 @@ id class_init(struct Method* method, struct Class* class, struct Class* parent,
   return class;
 }
 
-id class_subclass(struct Method* method, struct Class* class, const char* name, size_t size) {
+id class_subclass(id method, id class, const char* name, size_t size) {
   return object_call("init", object_call("alloc", header_get(class)->class), class, name, size);
 }
 
-id class_parent(struct Method* method, struct Class* class) {
+id class_parent(id method, struct Class* class) {
   return class->parent;
 }
 
-id class_find(struct Method* method, struct Class* class, const char* name) {
+id class_find(id method, struct Class* class, const char* name) {
   struct RootClass* root = object_call("root", class);
   struct Class* next = root->classes;
   while(next) {
@@ -166,20 +165,20 @@ id class_find(struct Method* method, struct Class* class, const char* name) {
   return NULL;
 }
 
-id class_release(struct Method* method, id class) {
+id class_release(id method, id class) {
   return class;
 }
 
-id object_init(struct Method* method, id object) {
+id object_init(id method, id object) {
   return object;
 }
 
-id object_retain(struct Method* m, id object) {
+id object_retain(id m, id object) {
   header_get(object)->refcount += 1;
   return object;
 }
 
-id object_release(struct Method* m, id object) {
+id object_release(id m, id object) {
   header_get(object)->refcount -= 1;
   if(header_get(object)->refcount <= 0) {
     object_call("finalize", object);
@@ -189,11 +188,11 @@ id object_release(struct Method* m, id object) {
   return object;
 }
 
-id object_class(struct Method* m, id object) {
+id object_class(id m, id object) {
   return header_get(object)->class;
 }
 
-id object_autorelease(struct Method* m, id object) {
+id object_autorelease(id m, id object) {
   struct RootClass* root = class_root(NULL, object_class(NULL, object));
   struct Header* header = header_get(object);
   header->ar_next = root->ar_queue;
@@ -201,7 +200,7 @@ id object_autorelease(struct Method* m, id object) {
   return object;
 }
 
-id object_release_pending(struct Method* m, id object) {
+id object_release_pending(id m, id object) {
   struct RootClass* root = class_root(NULL, object_class(NULL, object));
   struct Header* next = root->ar_queue;
   while(next) {
@@ -212,33 +211,33 @@ id object_release_pending(struct Method* m, id object) {
   return object;
 }
 
-id object_finalize(struct Method* method, id obj, ...) {
+id object_finalize(id method, id obj, ...) {
   fprintf(stderr, "Finalizing object of class `%s'\n", header_get(obj)->class->name);
   return obj;
 }
 
-id object_string(struct Method* method, id obj) {
+id object_string(id method, id obj) {
   struct Class* class = object_call("class", obj);
   char buffer[128];
   snprintf(buffer, sizeof(buffer), "<%s: %p %lu bytes>", class->name, obj, class->inst_size);
   return object_call("autorelease", object_new(object_call("find", class, "String"), buffer));
 }
 
-id object_cstring(struct Method* method, id obj) {
+id object_cstring(id method, id obj) {
   return object_call("cstring", object_call("string", obj));
 }
 
-id object_print(struct Method* method, id obj, FILE* target) {
+id object_print(id method, id obj, FILE* target) {
   fprintf(target, "%s", object_call("cstring", obj));
   return obj;
 }
 
-id object_println(struct Method* method, id obj, FILE* target) {
+id object_println(id method, id obj, FILE* target) {
   fprintf(target, "%s\n", object_call("cstring", obj));
   return obj;
 }
 
-id object_dump(struct Method* m, id obj, FILE* target) {
+id object_dump(id m, id obj, FILE* target) {
   struct Class* class = object_call("class", obj);
   fprintf(target, "%s\n", object_call("cstring", obj));
 
