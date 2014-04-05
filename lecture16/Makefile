@@ -2,9 +2,18 @@ OBJS=\
 	poly.o \
 	poly_hack.o
 
+# adjust as appropriate for OSX
+PLATFORM:=$(shell uname)
+ifeq ($(PLATFORM),Darwin)
+CFLAGS=-m32 -g -std=c99 -Wl,-no_pie
+NASM=nasm -f macho -g -D "C(x)=x"
+else
 CFLAGS=-m32 -g -std=c99
+NASM=nasm -f elf -g -F stabs -D "\"C(x)=x\""
+endif
+
 %.o: %.asm
-	nasm -f elf -g -F stabs $<
+	$(NASM) $<
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $<

@@ -3,11 +3,8 @@
 
 typedef void* id;
 
-id call(const char* method_name, id object, ...);
-id supercall(id prev_method, id object, ...);
-
-#define class_new(p, t, n) call("subclass", p, n, sizeof(t));
-
+id invoke(const char* method_name, id object, ...);
+id superinvoke(id prev_method, id object, ...);
 id oo_init();
 
 #endif

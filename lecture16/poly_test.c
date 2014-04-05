@@ -13,7 +13,7 @@ struct Person {
 };
 
 id person_init(id method, struct Person* obj, const char* name) {
-  supercall(method, obj);
+  superinvoke(method, obj);
 
   strncpy(obj->name, name, sizeof(obj->name));
   return obj;
@@ -39,7 +39,7 @@ struct Cat {
 };
 
 id cat_init(id method, struct Cat* cat, const char* name, int legs, int alive) {
-  supercall(method, cat);
+  superinvoke(method, cat);
 
   strncpy(cat->name, name, sizeof(cat->name));
   cat->legs = legs;
@@ -57,7 +57,7 @@ id cat_greet(id method, struct Cat* cat) {
 }
 
 id object_noisy_finalize(id method, id obj) {
-  fprintf(stderr, "Finalizing object %s\n", call("crepr", obj));
+  fprintf(stderr, "Finalizing object %s\n", invoke("crepr", obj));
   return obj;
 }
 
@@ -65,46 +65,46 @@ int main(int argc, char *argv[]) {
   id Object = oo_init();
 
   // overwrite finalize so we can see when an object is finalized
-  call("add_method", Object, "finalize", object_noisy_finalize);
+  invoke("add_method", Object, "finalize", object_noisy_finalize);
 
-  id Person = class_new(Object, struct Person, "Person");
-  call("add_method", Person, "init", person_init);
-  call("add_method", Person, "greet", person_greet);
+  id Person = invoke("subclass", Object, "Person", sizeof(struct Person));
+  invoke("add_method", Person, "init", person_init);
+  invoke("add_method", Person, "greet", person_greet);
 
-  id Friend = class_new(Person, struct Person, "Friend");
-  call("add_method", Friend, "greet", friend_greet);
+  id Friend = invoke("subclass", Person, "Friend", sizeof(struct Person));
+  invoke("add_method", Friend, "greet", friend_greet);
 
-  id Cat = class_new(Object, struct Cat, "Cat");
-  call("add_method", Cat, "init", cat_init);
-  call("add_method", Cat, "greet", cat_greet);
+  id Cat = invoke("subclass", Object, "Cat", sizeof(struct Cat));
+  invoke("add_method", Cat, "init", cat_init);
+  invoke("add_method", Cat, "greet", cat_greet);
 
-  id Array = call("find", Object, "Array");
-  id array = call("new", Array);
+  id Array = invoke("find", Object, "Array");
+  id array = invoke("new", Array);
 
-  id carl = call("autorelease", call("new", Person, "Carl"));
-  id jenny = call("autorelease", call("new", Friend, "Jenny"));
-  id sassy = call("autorelease", call("new", Cat, "Sassy", 4, 0));
-  id tp = call("autorelease", call("new", Cat, "Thunder Pickles", 4, 1));
+  id carl = invoke("autorelease", invoke("new", Person, "Carl"));
+  id jenny = invoke("autorelease", invoke("new", Friend, "Jenny"));
+  id sassy = invoke("autorelease", invoke("new", Cat, "Sassy", 4, 0));
+  id tp = invoke("autorelease", invoke("new", Cat, "Thunder Pickles", 4, 1));
 
-  call("push", array, carl);
-  call("push", array, jenny);
-  call("push", array, sassy);
-  call("push", array, tp);
+  invoke("push", array, carl);
+  invoke("push", array, jenny);
+  invoke("push", array, sassy);
+  invoke("push", array, tp);
 
   for(int ii = 0; ii < 10; ii++) {
-    call("push", array, tp);
+    invoke("push", array, tp);
   }
 
-  // these calls are polymorphic because the behavior of the "greet"
+  // these invokes are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
   // invoked on.
-  call("foreach", array, "println", stdout);
-  call("foreach", array, "greet");
-  call("dump", Array, stdout);
+  invoke("foreach", array, "println", stdout);
+  invoke("foreach", array, "greet");
+  invoke("dump", Array, stdout);
 
-  //call("undefined", sassy);
-  call("release", array);
-  call("release_pending", Object);
+  //invoke("undefined", sassy);
+  invoke("release", array);
+  invoke("release_pending", Object);
 
   return 0;
 }

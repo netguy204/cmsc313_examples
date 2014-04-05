@@ -20,6 +20,6 @@ all: $(BINS)
 	$(CC) -o $@ $< $(OBJS) $(CFLAGS) $(LDFLAGS)
 
 clean:
-	rm -f $(OBJS) $(BINS)
+	rm -f $(OBJS) $(BINS) $(BINOBJS)
 
 .PRECIOUS: $(OBJS) $(BINOBJS)

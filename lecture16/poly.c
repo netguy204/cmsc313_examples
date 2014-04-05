@@ -11,7 +11,8 @@ struct Header;
 struct Header {
   struct Class* class;
   struct Header* ar_next;
-  int refcount;
+  size_t size;
+  size_t refcount;
 };
 
 struct Method;
@@ -51,6 +52,7 @@ struct RootClass {
 id object_malloc(size_t base_size, struct Class* class) {
   struct Header* header = malloc(base_size + sizeof(struct Header));
   header->class = class;
+  header->size = base_size + sizeof(struct Header);
   header->refcount = 1;
   header->ar_next = NULL;
 
@@ -77,14 +79,14 @@ IMP method_imp(struct Method* method) {
   return method->imp;
 }
 
-id error_call(struct Method* method, id obj, ...) {
+id error_invoke(struct Method* method, id obj, ...) {
   fprintf(stderr, "Method `%s' does not exist on class %s\n", method->name, header_get(obj)->class->name);
   exit(1);
   return NULL;
 }
 
 id class_find_method(id m, struct Class* class, const char* name) {
-  if(class == NULL) return method_add(NULL, NULL, name, (IMP)error_call);
+  if(class == NULL) return method_add(NULL, NULL, name, (IMP)error_invoke);
 
   struct Method* method = class->methods;
   while(method) {
@@ -102,7 +104,7 @@ id method_find_supermethod(id m, struct Method* method) {
 }
 
 id method_init(id m, struct Method* method, struct Class* owner, const char* name, IMP imp) {
-  supercall(m, method);
+  superinvoke(m, method);
   method->owner = owner;
   method->imp = imp;
   strncpy(method->name, name, sizeof(method->name));
@@ -119,7 +121,7 @@ id class_alloc_size(id method, id class, size_t size) {
 }
 
 id class_add_method(id m, struct Class* class, const char* name, IMP imp) {
-  struct Method* method = call("init", call("alloc", class->method_class), class, name, imp);
+  struct Method* method = invoke("init", invoke("alloc", class->method_class), class, name, imp);
   method->next = class->methods;
   class->methods = method;
   return method;
@@ -127,7 +129,7 @@ id class_add_method(id m, struct Class* class, const char* name, IMP imp) {
 
 id class_add_class_method(id m, struct Class* class, const char* name, IMP imp) {
   // use the metaclass as our target
-  return call("add_method", call("class", class), name, imp);
+  return invoke("add_method", invoke("class", class), name, imp);
 }
 
 id class_root(id method, struct Class* class) {
@@ -140,7 +142,7 @@ id class_root(id method, struct Class* class) {
 
 id class_init(id method, struct Class* class, struct Class* parent, const char* name, size_t size) {
   // special case since this is used during bootstrap
-  if(method) supercall(method, class);
+  if(method) superinvoke(method, class);
 
   class->parent = parent;
   class->method_class = parent->method_class;
@@ -159,14 +161,14 @@ id class_init(id method, struct Class* class, struct Class* parent, const char* 
 id class_subclass(id method, id class, const char* name, size_t size) {
   // allocate the metaclass
   struct Class* old_metaclass = header_get(class)->class;
-  struct Class* new_metaclass = call("alloc", old_metaclass);
+  struct Class* new_metaclass = invoke("alloc", old_metaclass);
   char mcname[128];
 
   snprintf(mcname, sizeof(mcname), "%sMC", name); // name it
-  new_metaclass = call("init", new_metaclass, old_metaclass, name, old_metaclass->inst_size);
+  new_metaclass = invoke("init", new_metaclass, old_metaclass, name, old_metaclass->inst_size);
 
   // now produce the class
-  return call("init", call("alloc", new_metaclass), class, name, size);
+  return invoke("init", invoke("alloc", new_metaclass), class, name, size);
 }
 
 id class_parent(id method, struct Class* class) {
@@ -174,7 +176,7 @@ id class_parent(id method, struct Class* class) {
 }
 
 id class_find(id method, struct Class* class, const char* name) {
-  struct RootClass* root = call("root", class);
+  struct RootClass* root = invoke("root", class);
   struct Class* next = root->classes;
   while(next) {
     if(strcmp(next->name, name) == 0) {
@@ -201,7 +203,7 @@ id object_retain(id m, id object) {
 id object_release(id m, id object) {
   header_get(object)->refcount -= 1;
   if(header_get(object)->refcount <= 0) {
-    call("finalize", object);
+    invoke("finalize", object);
     object_free(object);
     return NULL;
   }
@@ -226,7 +228,7 @@ id object_release_pending(id m, id object) {
   root->ar_queue = NULL;
 
   while(next) {
-    call("release", header_obj(next));
+    invoke("release", header_obj(next));
     next = next->ar_next;
   }
   return object;
@@ -237,30 +239,30 @@ id object_finalize(id method, id obj, ...) {
 }
 
 id object_repr(id method, id obj) {
-  struct Class* class = call("class", obj);
+  struct Class* class = invoke("class", obj);
   char buffer[128];
-  snprintf(buffer, sizeof(buffer), "<%s: %p %lu bytes>", class->name, obj, class->inst_size);
-  id string = call("new", call("find", class, "String"), buffer);
-  return call("autorelease", string);
+  snprintf(buffer, sizeof(buffer), "<%s: %p %lu bytes>", class->name, obj, header_get(obj)->size);
+  id string = invoke("new", invoke("find", class, "String"), buffer);
+  return invoke("autorelease", string);
 }
 
 id object_crepr(id method, id obj) {
-  return call("cstring", call("repr", obj));
+  return invoke("cstring", invoke("repr", obj));
 }
 
 id object_print(id method, id obj, FILE* target) {
-  fprintf(target, "%s", call("cstring", obj));
+  fprintf(target, "%s", invoke("cstring", obj));
   return obj;
 }
 
 id object_println(id method, id obj, FILE* target) {
-  fprintf(target, "%s\n", call("cstring", obj));
+  fprintf(target, "%s\n", invoke("cstring", obj));
   return obj;
 }
 
 id object_dump(id m, id obj, FILE* target) {
-  struct Class* class = call("class", obj);
-  fprintf(target, "%s\n", call("cstring", obj));
+  struct Class* class = invoke("class", obj);
+  fprintf(target, "%s\n", invoke("cstring", obj));
 
   while(class) {
     fprintf(target, "%s\n", class->name);
@@ -281,7 +283,7 @@ struct String {
 
 id string_new(id method, id class, const char* init) {
   size_t len = strlen(init);
-  struct String* str = call("alloc_size", class, len+1);
+  struct String* str = invoke("alloc_size", class, len+1);
   memcpy(str->cstr, init, len);
   str->cstr[len] = '\0';
 
@@ -289,7 +291,7 @@ id string_new(id method, id class, const char* init) {
 }
 
 id string_finalize(id method, struct String* str) {
-  supercall(method, str);
+  superinvoke(method, str);
   return str;
 }
 
@@ -308,7 +310,7 @@ struct Array {
 };
 
 id array_init(id method, struct Array* arr) {
-  supercall(method, arr);
+  superinvoke(method, arr);
 
   arr->size = 0;
   arr->capacity = 10;
@@ -317,10 +319,10 @@ id array_init(id method, struct Array* arr) {
 }
 
 id array_finalize(id method, struct Array* arr) {
-  supercall(method, arr);
+  superinvoke(method, arr);
 
   for(size_t i = 0; i < arr->size; ++i) {
-    call("release", arr->buffer[i]);
+    invoke("release", arr->buffer[i]);
   }
 
   free(arr->buffer);
@@ -333,7 +335,7 @@ id array_push(id method, struct Array* arr, id value) {
     arr->buffer = realloc(arr->buffer, sizeof(id) * arr->capacity);
   }
 
-  arr->buffer[arr->size++] = call("retain", value);
+  arr->buffer[arr->size++] = invoke("retain", value);
   return value;
 }
 
@@ -343,7 +345,7 @@ id array_element_at(id method, struct Array* arr, size_t idx) {
 
 id array_foreach(id method, struct Array* arr, const char* message, id _1, id _2, id _3, id _4) {
   for(size_t i = 0; i < arr->size; ++i) {
-    call(message, arr->buffer[i], _1, _2, _3, _4);
+    invoke(message, arr->buffer[i], _1, _2, _3, _4);
   }
   return arr;
 }
@@ -382,43 +384,43 @@ id oo_init() {
   method_add(Class, Method, "add_method", (IMP)class_add_method);
 
   // and use this mechanism to add the init/finalize method to object
-  call("add_method", Object, "retain", object_retain);
-  call("add_method", Object, "release", object_release);
-  call("add_method", Object, "autorelease", object_autorelease);
-  call("add_method", Object, "finalize", object_finalize);
-  call("add_method", Object, "dump", object_dump);
-  call("add_method", Object, "class", object_class);
-  call("add_method", Object, "string", object_repr);
-  call("add_method", Object, "cstring", object_crepr);
-  call("add_method", Object, "repr", object_repr);
-  call("add_method", Object, "crepr", object_crepr);
-  call("add_method", Object, "print", object_print);
-  call("add_method", Object, "println", object_println);
-  call("add_method", Object, "release_pending", object_release_pending);
+  invoke("add_method", Object, "retain", object_retain);
+  invoke("add_method", Object, "release", object_release);
+  invoke("add_method", Object, "autorelease", object_autorelease);
+  invoke("add_method", Object, "finalize", object_finalize);
+  invoke("add_method", Object, "dump", object_dump);
+  invoke("add_method", Object, "class", object_class);
+  invoke("add_method", Object, "string", object_repr);
+  invoke("add_method", Object, "cstring", object_crepr);
+  invoke("add_method", Object, "repr", object_repr);
+  invoke("add_method", Object, "crepr", object_crepr);
+  invoke("add_method", Object, "print", object_print);
+  invoke("add_method", Object, "println", object_println);
+  invoke("add_method", Object, "release_pending", object_release_pending);
 
   // and the init and subclass methods to class
-  call("add_method", Class, "add_class_method", class_add_class_method);
-  call("add_method", Class, "alloc_size", class_alloc_size);
-  call("add_method", Class, "init", class_init);
-  call("add_method", Class, "new", class_new_object);
-  call("add_method", Class, "release", class_release);
-  call("add_method", Class, "subclass", class_subclass);
-  call("add_method", Class, "parent", class_parent);
-  call("add_method", Class, "root", class_root);
-  call("add_method", Class, "find", class_find);
+  invoke("add_method", Class, "add_class_method", class_add_class_method);
+  invoke("add_method", Class, "alloc_size", class_alloc_size);
+  invoke("add_method", Class, "init", class_init);
+  invoke("add_method", Class, "new", class_new_object);
+  invoke("add_method", Class, "release", class_release);
+  invoke("add_method", Class, "subclass", class_subclass);
+  invoke("add_method", Class, "parent", class_parent);
+  invoke("add_method", Class, "root", class_root);
+  invoke("add_method", Class, "find", class_find);
 
-  id String = class_new(Object, struct String, "String");
-  call("add_class_method", String, "new", string_new);
-  call("add_method", String, "finalize", string_finalize);
-  call("add_method", String, "cstring", string_cstring);
-  call("add_method", String, "string", string_string);
+  id String = invoke("subclass", Object, "String", sizeof(struct String));
+  invoke("add_class_method", String, "new", string_new);
+  invoke("add_method", String, "finalize", string_finalize);
+  invoke("add_method", String, "cstring", string_cstring);
+  invoke("add_method", String, "string", string_string);
 
-  id Array = class_new(Object, struct Array, "Array");
-  call("add_method", Array, "init", array_init);
-  call("add_method", Array, "finalize", array_finalize);
-  call("add_method", Array, "push", array_push);
-  call("add_method", Array, "element_at", array_element_at);
-  call("add_method", Array, "foreach", array_foreach);
+  id Array = invoke("subclass", Object, "Array", sizeof(struct Array));
+  invoke("add_method", Array, "init", array_init);
+  invoke("add_method", Array, "finalize", array_finalize);
+  invoke("add_method", Array, "push", array_push);
+  invoke("add_method", Array, "element_at", array_element_at);
+  invoke("add_method", Array, "foreach", array_foreach);
 
   return Object;
 }
