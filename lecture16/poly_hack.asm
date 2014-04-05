@@ -1,13 +1,18 @@
+[section .data]
+allocName:      db "alloc", 0
+initName:       db "init", 0
+
 [section .text]
-global object_call
-global object_supercall
+global call
+global supercall
+global class_new_object
 
 extern class_find_method
 extern method_find_supermethod
 extern method_imp
 extern header_get_
 
-object_call:
+call:
         push ebp
         mov ebp, esp
 
@@ -40,7 +45,7 @@ object_call:
 
 
 
-object_supercall:
+supercall:
         push ebp
         mov ebp, esp
 
@@ -61,3 +66,22 @@ object_supercall:
         mov esp, ebp
         pop ebp
         jmp eax
+
+
+class_new_object:
+        push ebp
+        mov ebp, esp
+
+        ;; call alloc on the class
+        push dword [ebp + 12]   ; the class
+        push allocName          ; "alloc"
+        call call
+        add esp, 8
+
+        mov dword [ebp + 8], initName ; message: "init"
+        mov [ebp + 12], eax           ; the new object
+
+        ;; clean what we did on the stack
+        mov esp, ebp
+        pop ebp
+        jmp call
