@@ -63,13 +63,9 @@ id cat_dosomething(id m, struct Cat* cat, const char* name) {
   return cat;
 }
 
-id cat_method_missing(id m, id class, const char* name) {
-  id BoundMethod = invoke("find_class", class, "BoundMethod");
-
-  id String = invoke("find_class", class, "String");
-  id name_string = invoke("autorelease", invoke("new", String, name));
+id cat_method_missing(id m, id class, id name) {
   id target = invoke("find_method", class, "dosomething");
-  return invoke("bind", target, name_string);
+  return invoke("bind", target, name);
 }
 
 id object_noisy_finalize(id method, id obj) {

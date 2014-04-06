@@ -87,7 +87,9 @@ id class_find_method(id m, struct Class* class, const char* name) {
     next_class = next_class->parent;
   }
 
-  return invoke("method_missing", class, name);
+  id String = invoke("find_class", class, "String");
+  id string = invoke("autorelease", invoke("new", String, name));
+  return invoke("method_missing", class, string);
 }
 
 id method_init(id m, struct Method* method, struct Class* owner, const char* name, IMP imp) {
