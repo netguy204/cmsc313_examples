@@ -69,8 +69,7 @@ id cat_method_missing(id m, id class, const char* name) {
   id String = invoke("find_class", class, "String");
   id name_string = invoke("autorelease", invoke("new", String, name));
   id target = invoke("find_method", class, "dosomething");
-  id method = invoke("new", BoundMethod, target, name_string);
-  return invoke("autorelease", method);
+  return invoke("bind", target, name_string);
 }
 
 id object_noisy_finalize(id method, id obj) {

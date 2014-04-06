@@ -112,6 +112,11 @@ id method_imp(id m, struct Method* method) {
   return method->imp;
 }
 
+id method_bind(id m, id method, id _1) {
+  id BoundMethod = invoke("find_class", invoke("class", method), "BoundMethod");
+  return invoke("autorelease", invoke("new", BoundMethod, method, _1));
+}
+
 // note, calls to method_invoke can include no more than 5 arguments
 // because we're not using the tailcall trick here.
 id method_invoke(id m, id method, id obj, id _1, id _2, id _3, id _4, id _5) {
@@ -447,6 +452,7 @@ id oo_init() {
 
   // and some nice introspection methods on Method
   invoke("add_method", Method, "name", method_name);
+  invoke("add_method", Method, "bind", method_bind);
 
   // and use this mechanism to add the init/finalize method to Object
   invoke("add_method", Object, "retain", object_retain);
