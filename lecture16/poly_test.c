@@ -92,10 +92,10 @@ int main(int argc, char *argv[]) {
 
   id Array = invoke("find_class", Object, "Array");
 
-  id carl = invoke("autorelease", invoke("new", Person, "Carl"));
-  id jenny = invoke("autorelease", invoke("new", Friend, "Jenny"));
-  id sassy = invoke("autorelease", invoke("new", Cat, "Sassy", 4, 0));
-  id tp = invoke("autorelease", invoke("new", Cat, "Thunder Pickles", 4, 1));
+  id carl = invoke("new", Person, "Carl");
+  id jenny = invoke("new", Friend, "Jenny");
+  id sassy = invoke("new", Cat, "Sassy", 4, 0);
+  id tp = invoke("new", Cat, "Thunder Pickles", 4, 1);
 
   id array = invoke("new", Array);
   invoke("push", array, carl);
@@ -110,14 +110,18 @@ int main(int argc, char *argv[]) {
   // these invokes are polymorphic because the behavior of the "greet"
   // method depends on the class of the object that it is being
   // invoked on.
-  invoke("foreach", array, "println", stdout);
   invoke("foreach", array, "greet");
+  invoke("release", array);
 
   invoke("sing", sassy);
   invoke("dance", sassy);
   invoke("make_sushi", sassy);
 
-  invoke("release", array);
+  invoke("release", carl);
+  invoke("release", jenny);
+  invoke("release", sassy);
+  invoke("release", tp);
+
   invoke("release_pending", Object);
 
   //invoke("dump", Array, stdout);
