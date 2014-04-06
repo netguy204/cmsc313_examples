@@ -305,9 +305,7 @@ struct String {
 id string_new(id method, id class, const char* init) {
   size_t len = strlen(init);
   struct String* str = invoke("alloc_size", class, len+1);
-  memcpy(str->cstr, init, len);
-  str->cstr[len] = '\0';
-
+  memcpy(str->cstr, init, len + 1);
   return str;
 }
 
@@ -398,7 +396,7 @@ id boundmethod_init(id m, struct BoundMethod* method, id unbound, id _1) {
 id boundmethod_finalize(id m, struct BoundMethod* method) {
   invoke("superinvoke", m, method);
 
-  invoke("release", method);
+  invoke("release", method->method);
   invoke("release", method->_1);
   return method;
 }

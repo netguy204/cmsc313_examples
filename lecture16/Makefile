@@ -10,7 +10,7 @@ NASM=nasm -f macho -g -D "C(x)=_ %+ x"
 LDFLAGS=-Wl,-no_pie
 else
 CFLAGS=-m32 -g -std=c99
-NASM=nasm -f elf -g -F stabs -D "\"C(x)=x\""
+NASM=nasm -f elf -g -F stabs -D "C(x)=x"
 endif
 
 %.o: %.asm
