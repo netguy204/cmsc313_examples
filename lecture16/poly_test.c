@@ -5,15 +5,17 @@
 #include <stdlib.h>
 
 /*
- * Define the layout of the memory associated with a Person
- * instance. We'll create the classes later.
+ * Each instance of a Person class should have this structure
+ * associated with it. This is where we store all of our instance
+ * level data. We're effectively defining the memebers of the
+ * instance.
  */
 struct Person {
   char name[32];
 };
 
 id person_init(id method, struct Person* obj, const char* name) {
-  superinvoke(method, obj);
+  invoke("superinvoke", method, obj);
 
   strncpy(obj->name, name, sizeof(obj->name));
   return obj;
@@ -30,7 +32,7 @@ id friend_greet(id method, struct Person* obj) {
 }
 
 /*
- * Also define a layout for a Cat
+ * Each instance of a Cat should have this data associated with it.
  */
 struct Cat {
   char name[32];
@@ -39,7 +41,7 @@ struct Cat {
 };
 
 id cat_init(id method, struct Cat* cat, const char* name, int legs, int alive) {
-  superinvoke(method, cat);
+  invoke("superinvoke", method, cat);
 
   strncpy(cat->name, name, sizeof(cat->name));
   cat->legs = legs;
@@ -54,6 +56,21 @@ id cat_greet(id method, struct Cat* cat) {
     printf("You are talking to a dead cat named %s. That's odd.\n", cat->name);
   }
   return cat;
+}
+
+id cat_dosomething(id m, struct Cat* cat, const char* name) {
+  printf("%s doesn't know how to `%s'\n", cat->name, name);
+  return cat;
+}
+
+id cat_method_missing(id m, id class, const char* name) {
+  id BoundMethod = invoke("find_class", class, "BoundMethod");
+
+  id String = invoke("find_class", class, "String");
+  id name_string = invoke("autorelease", invoke("new", String, name));
+  id target = invoke("find_method", class, "dosomething");
+  id method = invoke("new", BoundMethod, target, name_string);
+  return invoke("autorelease", method);
 }
 
 id object_noisy_finalize(id method, id obj) {
@@ -77,8 +94,10 @@ int main(int argc, char *argv[]) {
   id Cat = invoke("subclass", Object, "Cat", sizeof(struct Cat));
   invoke("add_method", Cat, "init", cat_init);
   invoke("add_method", Cat, "greet", cat_greet);
+  invoke("add_method", Cat, "dosomething", cat_dosomething);
+  invoke("add_class_method", Cat, "method_missing", cat_method_missing);
 
-  id Array = invoke("find", Object, "Array");
+  id Array = invoke("find_class", Object, "Array");
   id array = invoke("new", Array);
 
   id carl = invoke("autorelease", invoke("new", Person, "Carl"));
@@ -102,7 +121,10 @@ int main(int argc, char *argv[]) {
   invoke("foreach", array, "greet");
   invoke("dump", Array, stdout);
 
-  //invoke("undefined", sassy);
+  invoke("sing", sassy);
+  invoke("dance", sassy);
+  invoke("make_sushi", sassy);
+
   invoke("release", array);
   invoke("release_pending", Object);
 

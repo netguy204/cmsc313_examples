@@ -8,16 +8,22 @@ allocName:      db "alloc", 0
 initName:       db "init", 0
 
 [section .text]
-global _invoke
-global _superinvoke
-global _class_new_object
+global C(invoke)
+global C(superinvoke)
+global C(class_new_object)
 
-extern _class_find_method
-extern _method_find_supermethod
-extern _method_imp
-extern _header_get_
+extern C(class_find_method)
+extern C(method_supermethod)
+extern C(method_imp)
+extern C(header_get_)
 
-_invoke:
+
+;;; Exploit the CDECL calling convention and varargs to invoke our target
+;;; by manipulating the arguments we were given and then jmp'ing so that
+;;; it gets all the arguments we had and will return to our caller instead
+;;; of to us. This is called a "tailcall" because invoke doesn't grow the
+;;; stack
+C(invoke):
         push ebp
         mov ebp, esp
 
@@ -28,61 +34,39 @@ _invoke:
 
         ;; convert the object into a class
         push dword [ebp + 12]   ; the object
-        call _header_get_        ; the header
+        call C(header_get_)     ; the header
 
         mov eax, [eax]          ; the class
         mov [esp], eax
 
         push dword 0            ; the method (not used)
-        call _class_find_method
+        call C(class_find_method)
         add esp, 24
 
         mov [ebp + 8], eax      ; replace the name with the method
 
         push eax                ; get the implementation from the method
-        call _method_imp
-        add esp, 4
-
-        ;; now tweak the stack so that the implementation gets all of the arguments
-        ;; it needs.
-        mov esp, ebp
-        pop ebp
-        jmp eax
-
-
-
-
-_superinvoke:
-        push ebp
-        mov ebp, esp
-
-        ;; look up the actual target of this invoke
-        push dword [ebp + 8]    ; the previous method
         push dword 0            ; the method (not used)
-        call _method_find_supermethod
+        call C(method_imp)
         add esp, 8
 
-        mov [ebp + 8], eax      ; replace the previous method with the new method
-
-        push eax                ; get the implementation from the method
-        call _method_imp
-        add esp, 4
-
         ;; now tweak the stack so that the implementation gets all of the arguments
         ;; it needs.
         mov esp, ebp
         pop ebp
         jmp eax
 
-
-_class_new_object:
+;;; Invoke "alloc" and then tail-invoke "init" on the result. Since invoke will
+;;; tailcall into init the init method will return to our caller instead of to
+;;; us.
+C(class_new_object):
         push ebp
         mov ebp, esp
 
         ;; invoke alloc on the class
         push dword [ebp + 12]   ; the class
         push allocName          ; "alloc"
-        call _invoke
+        call C(invoke)
         add esp, 8
 
         mov dword [ebp + 8], initName ; message: "init"
@@ -91,4 +75,4 @@ _class_new_object:
         ;; clean what we did on the stack
         mov esp, ebp
         pop ebp
-        jmp _invoke
+        jmp C(invoke)
