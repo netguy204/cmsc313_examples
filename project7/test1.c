@@ -1,6 +1,7 @@
 #include "unittest.h"
 
 #include <ctype.h>
+#include <stddef.h>
 
 extern void strrev(char *str);
 extern int strrepl(char *str, int c, int (* isinsubset) (int c) );
@@ -36,8 +37,11 @@ int main(int argc, char *argv[]) {
   check(strcmp(the_number, "The number is ###-####") == 0, "strrepl replaced the correct characters");
 
   char* empty = copy("");
-  check(strrepl(empty, '#', &isdigit) == 0, "replaces nothing in the empty string");
-  check(strcmp(empty, "") == 0, "and the empty string stays emtpy");
+  check(strrepl(empty, '#', &isdigit) == 0, "strrepl replaces nothing in the empty string");
+  check(strcmp(empty, "") == 0, "strrepl leaves the empty string emtpy");
+
+  strrev(NULL); // make sure we don't crash on NULL
+  check(strrepl(NULL, '#', &isdigit) == 0, "strrepl replaces nothing in the NULL string");
 
   return check_summary();
 }
