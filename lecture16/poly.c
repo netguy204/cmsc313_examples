@@ -243,8 +243,9 @@ id object_release_pending(id m, id object) {
   root->ar_queue = NULL;
 
   while(next) {
+    struct Header* nextnext = next->ar_next;
     invoke("release", header_obj(next));
-    next = next->ar_next;
+    next = nextnext;
   }
   return object;
 }
