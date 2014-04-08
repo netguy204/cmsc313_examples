@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
       if(sscanf(line, "%08x-%08x %c", &start, &end, &p) == 3) {
         size_t size = end - start;
 
-        printf("start: %lu, end: %lu perm: %c size: %lu\n", start, end, p, size);
+        printf("Searching %08x-%08x (%lu bytes)\n", start, end, size);
         char* mem = malloc(size);
         fseek(memfile, start, SEEK_SET);
         fread(mem, size, 1, memfile);
