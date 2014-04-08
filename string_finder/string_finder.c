@@ -14,7 +14,7 @@ void show_strings(char* mem, size_t size, size_t min_size) {
     for(size_t j = 0; j < (size - i); ++j) {
       char ch = mem[i + j];
       if(!is_string_part(ch)) {
-        if(ch == '\0' && j > min_size) {
+        if(ch == '\0' && j >= min_size) {
           printf("%08x : `%s'\n", i, &mem[i]);
         }
         i = i + j;
