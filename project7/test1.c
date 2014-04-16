@@ -2,6 +2,8 @@
 
 #include <ctype.h>
 #include <stddef.h>
+#include <stdlib.h>
+#include <string.h>
 
 extern void strrev(char *str);
 extern int strrepl(char *str, int c, int (* isinsubset) (int c) );
